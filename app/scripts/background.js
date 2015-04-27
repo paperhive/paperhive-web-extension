@@ -43,7 +43,6 @@ chrome.webRequest.onHeadersReceived.addListener(
 chrome.webRequest.onCompleted.addListener(
   function(details) {
     ////window.alert('Tutti completti');
-    console.info('URL: ' + details.url);
     if (details.tabId !== -1) {
       var header = getHeaderFromHeaders(
         details.responseHeaders,
@@ -54,7 +53,7 @@ chrome.webRequest.onCompleted.addListener(
     }
     //window.alert(details.responseHeaders);
     if (tabToMimeType[details.tabId] === 'application/pdf') {
-      //window.alert(details.url);
+      window.alert('This is a PDF.');
       // fetch the PDF again (hopefully from cache)
       var xhr = new XMLHttpRequest();
       xhr.onreadystatechange = function() {
