@@ -1,6 +1,8 @@
 {
   "name": "paperhive",
   "version": "0.0.0",
-  "dependencies": {},
+  "dependencies": {
+    "crypto-js": "~3.1.4"
+  },
   "devDependencies": {}
 }

@@ -1,5 +1,7 @@
 'use strict';
 
+var crypto = require('crypto');
+
 //chrome.runtime.onInstalled.addListener(function(details) {
 //  console.log('previousVersion', details.previousVersion);
 //});
@@ -53,7 +55,7 @@ chrome.webRequest.onCompleted.addListener(
     }
     //window.alert(details.responseHeaders);
     if (tabToMimeType[details.tabId] === 'application/pdf') {
-      window.alert('This is a PDF.');
+      console.log('This is a PDF.');
       // fetch the PDF again (hopefully from cache)
       var xhr = new XMLHttpRequest();
       xhr.onreadystatechange = function() {
@@ -62,6 +64,11 @@ chrome.webRequest.onCompleted.addListener(
         if (xhr.readyState === 4) {
           //window.alert('hit me baby one more time <' + xhr.responseText + '>');
           //callback(xhr.responseText);
+          // compute the hash of the response
+          var hash = crypto.createHash('sha1');
+          hash.setEncoding('hex');
+          hash.update(xhr.responseText);
+          console.log(hash.digest('hex'));
         }
       };
       xhr.open(
