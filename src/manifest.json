@@ -14,17 +14,9 @@
     ],
     "persistent": true
   },
-  "_page_action": {
-    "default_icon": {
-      "19": "images/icon-grey-19.png",
-      "38": "images/icon-grey-38.png"
-    },
-    "default_title": "paperhive",
-    "default_popup": "popup.html"
-  },
   "browser_action": {
     "default_icon": "images/icon-grey-19.png",
-    "_default_popup": "popup.html"
+    "default_popup": "popup.html"
   },
   "permissions": [
     "webRequest",
