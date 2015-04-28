@@ -1,0 +1,20 @@
+language: node_js
+node_js:
+  - iojs
+before_script:
+  - npm install -g bower
+  - npm install -g gulp
+  # Install (possibly from cache), update packages according to bower.json,
+  # and prune obsolete packages.
+  - bower update
+  - bower prune
+  # Ditto.
+  - npm update
+  - npm prune
+script:
+  - gulp
+sudo: false
+cache:
+  directories:
+    - node_modules
+    - bower_components
