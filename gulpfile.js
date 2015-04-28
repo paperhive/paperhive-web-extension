@@ -78,7 +78,7 @@ var imageminOpts = {
   use: [pngquant()]
 };
 gulp.task('images', function() {
-  return gulp.src('src/images/**')
+  return gulp.src('src/images/*.png')
   .pipe(imagemin(imageminOpts))
   .pipe(gulp.dest('build/images'));
 });
