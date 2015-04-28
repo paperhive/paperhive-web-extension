@@ -60,13 +60,25 @@ chrome.webRequest.onCompleted.addListener(
       xhr.responseType = 'blob';
       xhr.onload = function() {
         if (this.status === 200) {
-          // read the blob data
+          // read the blob data, cf.
+          // <http://www.html5rocks.com/en/tutorials/file/xhr2/>
           var a = new FileReader();
           a.readAsBinaryString(this.response);
           a.onloadend = function() {
             var hash = crypto.createHash('sha1');
             hash.update(a.result, 'binary');
-            console.log(hash.digest('hex'));
+            var hashValue = hash.digest('hex');
+            console.log(hashValue);
+            // check if the paper is on paperhive
+            var xhr2 = new XMLHttpRequest();
+            var paperHive = 'https://paperhive.org/dev/backend/branches/master';
+            xhr2.open('GET', paperHive + '/articles/bySha/' + hashValue, true);
+            xhr2.onload = function() {
+              if (this.status === 200) {
+                console.log('found the paper!');
+              }
+            };
+            xhr2.send(null);
           };
         }
       };
