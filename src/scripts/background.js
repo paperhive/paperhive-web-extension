@@ -1,6 +1,7 @@
 'use strict';
 
 var crypto = require('crypto');
+var async = require('async');
 
 //chrome.runtime.onInstalled.addListener(function(details) {
 //  console.log('previousVersion', details.previousVersion);
@@ -54,39 +55,50 @@ chrome.webRequest.onCompleted.addListener(
     }
 
     if (tabToMimeType[details.tabId] === 'application/pdf') {
-      // fetch the PDF again (hopefully from cache)
-      var xhr = new XMLHttpRequest();
-      xhr.open('GET', details.url, true);
-      xhr.responseType = 'blob';
-      xhr.onload = function() {
-        if (this.status === 200) {
-          // read the blob data, cf.
-          // <http://www.html5rocks.com/en/tutorials/file/xhr2/>
-          var a = new FileReader();
-          a.readAsBinaryString(this.response);
-          a.onloadend = function() {
-            var hash = crypto.createHash('sha1');
-            hash.update(a.result, 'binary');
-            var hashValue = hash.digest('hex');
-            console.log(hashValue);
-            // check if the paper is on paperhive
-            var xhr2 = new XMLHttpRequest();
-            var paperHive = 'https://paperhive.org/dev/backend/branches/master';
-            xhr2.open('GET', paperHive + '/articles/bySha/' + hashValue, true);
-            xhr2.responseType = 'json';
-            xhr2.onload = function() {
-              if (this.status === 200) {
-                console.log('found the paper!');
-                console.log(xhr2.response);
-              } else if (this.status === 404) {
-                console.log('didn\'t find the paper!');
-              }
-            };
-            xhr2.send(null);
+      async.waterfall([
+        function getPdfHash(callback) {
+          // Since we have no access to the PDF data, we have to
+          // fetch it again and hope it gets served from cache.
+          var xhr = new XMLHttpRequest();
+          xhr.open('GET', details.url, true);
+          xhr.responseType = 'blob';
+          xhr.onload = function() {
+            if (this.status === 200) {
+              // read the blob data, cf.
+              // <http://www.html5rocks.com/en/tutorials/file/xhr2/>
+              var a = new FileReader();
+              a.readAsBinaryString(this.response);
+              a.onloadend = function() {
+                var hash = crypto.createHash('sha1');
+                hash.update(a.result, 'binary');
+                callback(null, hash.digest('hex'));
+              };
+            } else {
+              callback('Could not fetch PDF.');
+            }
           };
+          xhr.send(null);
+        },
+        function checkOnPaperhive(hash, callback) {
+          var xhr = new XMLHttpRequest();
+          var paperHive = 'https://paperhive.org/dev/backend/branches/master';
+          xhr.open('GET', paperHive + '/articles/bySha/' + hash, true);
+          xhr.responseType = 'json';
+          xhr.onload = function() {
+            if (this.status === 200) {
+              console.log('found the paper!');
+              console.log(xhr.response);
+              callback(null, xhr.response);
+            } else if (this.status === 404) {
+              console.log('didn\'t find the paper!');
+              callback(null, {});
+            } else {
+              callback('Unexpected return value');
+            }
+          };
+          xhr.send(null);
         }
-      };
-      xhr.send(null);
+      ]);
     }
   },
   {
