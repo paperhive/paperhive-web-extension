@@ -54,6 +54,9 @@ chrome.webRequest.onCompleted.addListener(
       tabToMimeType[details.tabId] = header && header.value.split(';', 1)[0];
     }
 
+    // TODO put this into a config file
+    var paperHive = 'https://paperhive.org/dev/backend/branches/master';
+
     if (tabToMimeType[details.tabId] === 'application/pdf') {
       async.waterfall([
         function getPdfHash(callback) {
@@ -81,7 +84,6 @@ chrome.webRequest.onCompleted.addListener(
         },
         function checkOnPaperhive(hash, callback) {
           var xhr = new XMLHttpRequest();
-          var paperHive = 'https://paperhive.org/dev/backend/branches/master';
           xhr.open('GET', paperHive + '/articles/bySha/' + hash, true);
           xhr.responseType = 'json';
           xhr.onload = function() {
@@ -92,6 +94,40 @@ chrome.webRequest.onCompleted.addListener(
             } else if (this.status === 404) {
               console.log('didn\'t find the paper!');
               callback(null, {});
+            } else {
+              callback('Unexpected return value');
+            }
+          };
+          xhr.send(null);
+        },
+        function fetchDiscussions(article, callback) {
+          var xhr = new XMLHttpRequest();
+          xhr.open(
+            'GET',
+            paperHive + '/articles/' + article._id + '/discussions/',
+            true
+          );
+          xhr.responseType = 'json';
+          xhr.onload = function() {
+            if (this.status === 200) {
+              console.log('Got the discussions!');
+              console.log(xhr.response);
+              var badge;
+              if (xhr.response.length < 1) {
+                badge = null;
+              } else if (xhr.response.length < 1000) {
+                badge = xhr.response.length.toString();
+              } else {
+                badge = '999+';
+              }
+              //chrome.browserAction.setBadgeBackgroundColor(
+              //  {color: '#000000'}
+              //);
+              chrome.browserAction.setBadgeText({
+                text: badge,
+                tabId: details.tabId
+              });
+              callback(null, xhr.response);
             } else {
               callback('Unexpected return value');
             }
