@@ -73,9 +73,13 @@ chrome.webRequest.onCompleted.addListener(
             var xhr2 = new XMLHttpRequest();
             var paperHive = 'https://paperhive.org/dev/backend/branches/master';
             xhr2.open('GET', paperHive + '/articles/bySha/' + hashValue, true);
+            xhr2.responseType = 'json';
             xhr2.onload = function() {
               if (this.status === 200) {
                 console.log('found the paper!');
+                console.log(xhr2.response);
+              } else if (this.status === 404) {
+                console.log('didn\'t find the paper!');
               }
             };
             xhr2.send(null);
