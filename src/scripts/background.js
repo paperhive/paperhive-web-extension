@@ -44,7 +44,6 @@ chrome.webRequest.onHeadersReceived.addListener(
 
 chrome.webRequest.onCompleted.addListener(
   function(details) {
-    ////window.alert('Tutti completti');
     if (details.tabId !== -1) {
       var header = getHeaderFromHeaders(
         details.responseHeaders,
@@ -53,30 +52,25 @@ chrome.webRequest.onCompleted.addListener(
       // If the header is set, use its value. Otherwise, use undefined.
       tabToMimeType[details.tabId] = header && header.value.split(';', 1)[0];
     }
-    //window.alert(details.responseHeaders);
+
     if (tabToMimeType[details.tabId] === 'application/pdf') {
-      console.log('This is a PDF.');
       // fetch the PDF again (hopefully from cache)
       var xhr = new XMLHttpRequest();
-      xhr.onreadystatechange = function() {
-        //window.alert('change <' + xhr.readyState + ' ' +  xhr.status + '>');
-        //if (xhr.readyState === 4 && xhr.status === 200) {
-        if (xhr.readyState === 4) {
-          //window.alert('hit me baby one more time <' + xhr.responseText + '>');
-          //callback(xhr.responseText);
-          // compute the hash of the response
-          var hash = crypto.createHash('sha1');
-          hash.setEncoding('hex');
-          hash.update(xhr.responseText);
-          console.log(hash.digest('hex'));
+      xhr.open('GET', details.url, true);
+      xhr.responseType = 'blob';
+      xhr.onload = function() {
+        if (this.status === 200) {
+          // read the blob data
+          var a = new FileReader();
+          a.readAsBinaryString(this.response);
+          a.onloadend = function() {
+            var hash = crypto.createHash('sha1');
+            hash.update(a.result, 'binary');
+            console.log(hash.digest('hex'));
+          };
         }
       };
-      xhr.open(
-        'GET',
-        details.url,
-        true
-      );
-      xhr.send();
+      xhr.send(null);
     }
   },
   {
