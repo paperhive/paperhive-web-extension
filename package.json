@@ -1,6 +1,11 @@
 {
   "name": "paperhive",
   "version": "0.0.0",
+  "description": "Chrome extension for PaperHive",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:paperhive/paperhive-chrome-extension.git"
+  },
   "dependencies": {
     "async": "^0.9.0"
   },
