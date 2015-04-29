@@ -3,7 +3,7 @@ temp
 .tmp
 build
 .sass-cache
-app/bower_components
+bower_components
 test/bower_components
 src/bower_components
 package
