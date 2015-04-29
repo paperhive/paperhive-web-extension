@@ -17,6 +17,7 @@ var minifyCSS = require('gulp-minify-css');
 var imagemin = require('gulp-imagemin');
 var pngquant = require('imagemin-pngquant');
 var less = require('gulp-less');
+var browserify = require('browserify');
 
 var debug = process.env.DEBUG || false;
 
@@ -36,13 +37,15 @@ function handleError(error) {
 // // (and continue to do so on updates)
 // // see
 // https://github.com/gulpjs/gulp/blob/master/docs/recipes/fast-browserify-builds-with-watchify.md
-function js(watch) {
-  var browserify = require('browserify');
+function js(watch, file) {
   //var shim = require('browserify-shim');
   var watchify = require('watchify');
 
   var browserifyArgs = _.extend(watchify.args, {debug: true});
-  var bundler = browserify('./src/scripts/background.js', browserifyArgs);
+  var bundler = browserify(
+    './src/scripts/' + file,
+    browserifyArgs
+  );
 
   //// use shims defined in package.json via 'browser' and 'browserify-shim'
   //// properties
@@ -56,7 +59,7 @@ function js(watch) {
   function rebundle () {
     return bundler.bundle()
       .on('error', handleError)
-      .pipe(source('background.js'))
+      .pipe(source(file))
       .pipe(buffer())
       .pipe(sourcemaps.init({loadMaps: true}))
         .pipe(debug ? gutil.noop() : streamify(uglify()))
@@ -68,9 +71,13 @@ function js(watch) {
   return rebundle();
 }
 
-// bundle once
-gulp.task('scripts', ['jshint', 'jscs'], function() {
-  return js(false);
+gulp.task('background', function() {
+  return js(false, 'background.js');
+});
+gulp.task('popup', function() {
+  return js(false, 'popup.js');
+});
+gulp.task('scripts', ['jshint', 'jscs', 'background', 'popup'], function() {
 });
 
 var imageminOpts = {
