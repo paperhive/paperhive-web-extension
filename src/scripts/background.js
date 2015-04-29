@@ -58,14 +58,18 @@ chrome.webRequest.onCompleted.addListener(
     var paperHive = 'https://paperhive.org/dev/backend/branches/master';
 
     if (tabToMimeType[details.tabId] === 'application/pdf') {
-      // replace icon
-      chrome.browserAction.setIcon({
-        path: {
-          '19': 'images/icon-19.png',
-          '38': 'images/icon-38.png'
-        },
-        tabId: details.tabId
-      });
+      // Replace icon, and do so with a delay. Otherwise it doesn't work
+      // reliably, cf.
+      // <https://code.google.com/p/chromium/issues/detail?id=123240>.
+      setTimeout(function() {
+        chrome.browserAction.setIcon({
+          path: {
+            '19': 'images/icon-19.png',
+            '38': 'images/icon-38.png'
+          },
+          tabId: details.tabId
+        });
+      }, 100);
       async.waterfall([
         function getPdfHash(callback) {
           // Since we have no access to the PDF data, we have to
