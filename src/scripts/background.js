@@ -1,32 +1,31 @@
 'use strict';
 
+var iii = 123;
+
 var crypto = require('crypto');
 var async = require('async');
 
-//chrome.runtime.onInstalled.addListener(function(details) {
-//  console.log('previousVersion', details.previousVersion);
-//});
-//
-//chrome.tabs.onUpdated.addListener(function(tabId) {
-//  chrome.pageAction.show(tabId);
-//});
-//
-//console.log('\'Allo \'Allo! Event Page for Page Action');
 
-// -------------------------------------------------------------------------
+var upload = function(fileName) {
+  console.log('Uploading', fileName);
+};
+
 // from <http://stackoverflow.com/a/21042958/353337>
-function getHeaderFromHeaders(headers, headerName) {
+var getHeaderFromHeaders = function(headers, headerName) {
   for (var i = 0; i < headers.length; ++i) {
     var header = headers[i];
     if (header.name.toLowerCase() === headerName) {
       return header;
     }
   }
-}
+};
 
 var tabToMimeType = {};
+var tabToArticle = {};
+var tabToDiscussions = {};
 chrome.webRequest.onHeadersReceived.addListener(
   function(details) {
+    console.log(details);
     if (details.tabId !== -1) {
       var header = getHeaderFromHeaders(
         details.responseHeaders,
@@ -101,7 +100,7 @@ chrome.webRequest.onCompleted.addListener(
           xhr.onload = function() {
             if (this.status === 200) {
               console.log('found the paper!');
-              console.log(xhr.response);
+              tabToArticle[details.tabId] = xhr.response;
               callback(null, xhr.response);
             } else if (this.status === 404) {
               console.log('didn\'t find the paper!');
@@ -123,7 +122,7 @@ chrome.webRequest.onCompleted.addListener(
           xhr.onload = function() {
             if (this.status === 200) {
               console.log('Got the discussions!');
-              console.log(xhr.response);
+              tabToDiscussions[details.tabId] = xhr.response;
               var badge;
               if (xhr.response.length < 1) {
                 badge = null;
@@ -139,12 +138,38 @@ chrome.webRequest.onCompleted.addListener(
                 text: badge,
                 tabId: details.tabId
               });
+              // Communicate the discussions to the popup
+              var port = chrome.extension.connect({
+                name: 'Sample Communication'
+              });
+              port.postMessage(xhr.response);
               callback(null, xhr.response);
             } else {
               callback('Unexpected return value');
             }
           };
           xhr.send(null);
+        },
+        function sendToPopup(discussions, callback) {
+          console.log('send');
+          //chrome.runtime.sendMessage(
+          //  {greeting: 'hello'},
+          //  function(response) {
+          //    console.log(response);
+          //  }
+          //);
+          chrome.tabs.query(
+            {active: true, currentWindow: true},
+            function(tabs) {
+              chrome.tabs.sendMessage(
+                tabs[0].id,
+                {greeting: 'hello'},
+                function(response) {
+                  if (response) {
+                    console.log(response.farewell);
+                  }
+                });
+            });
         }
       ]);
     }
@@ -155,12 +180,3 @@ chrome.webRequest.onCompleted.addListener(
   },
   ['responseHeaders']
 );
-
-//chrome.browserAction.onClicked.addListener(
-//  function(tab) {
-//    window.alert(
-//      'Tab with URL ' + tab.url + ' has MIME-type ' + tabToMimeType[tab.id]
-//    );
-//  }
-//);
-// -------------------------------------------------------------------------

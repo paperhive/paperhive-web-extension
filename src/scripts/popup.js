@@ -1,3 +1,6 @@
 'use strict';
 
-console.log('\'Allo \'Allo! Popup');
+var bg = chrome.extension.getBackgroundPage();
+
+console.log(bg);
+console.log(bg.iii);
