@@ -16,6 +16,7 @@ var htmlmin = require('gulp-htmlmin');
 var minifyCSS = require('gulp-minify-css');
 var imagemin = require('gulp-imagemin');
 var pngquant = require('imagemin-pngquant');
+var less = require('gulp-less');
 
 var debug = process.env.DEBUG || false;
 
@@ -124,16 +125,15 @@ gulp.task('html', ['htmlhint'], function() {
   .pipe(gulp.dest('build'));
 });
 
-// minify styles
-var minifyCssOpts = {
-  'restructuring': false
-};
+// compile less to css
 gulp.task('styles', function() {
-  return gulp.src('src/styles/**/*.css')
-  .pipe(debug ? gutil.noop() : minifyCSS(minifyCssOpts))
-  .pipe(gulp.dest('build/styles'));
-  //return gulp.src('src/styles/**')
-  //.pipe(gulp.dest('build/styles'));
+  return gulp.src('src/styles/popup.less')
+  .pipe(less())
+  .on('error', handleError)
+  .pipe(debug ? gutil.noop() : minifyCSS({
+    restructuring: false
+  }))
+  .pipe(gulp.dest('build'));
 });
 
 gulp.task('clean', function(cb) {
