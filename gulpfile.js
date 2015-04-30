@@ -72,10 +72,10 @@ function js(watch, file) {
   return rebundle();
 }
 
-gulp.task('background', function() {
+gulp.task('background', ['static'], function() {
   return js(false, 'background.js');
 });
-gulp.task('popup', function() {
+gulp.task('popup', ['static'], function() {
   return js(false, 'popup.js');
 });
 gulp.task('scripts', ['jshint', 'jscs', 'background', 'popup'], function() {
