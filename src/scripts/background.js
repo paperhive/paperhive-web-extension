@@ -2,6 +2,12 @@
 (function() {
   var crypto = require('crypto');
   var async = require('async');
+  var $ = require('jquery');
+
+  var apiUrl;
+  $.getJSON('../../config.json', function(data) {
+    apiUrl = data.apiUrl;
+  });
 
   // from <http://stackoverflow.com/a/21042958/353337>
   var getHeaderFromHeaders = function(headers, headerName) {
@@ -63,9 +69,6 @@
           header && header.value.split(';', 1)[0];
       }
 
-      // TODO put this into a config file
-      var paperHive = 'https://paperhive.org/dev/backend/branches/master';
-
       if (global.tabToMimeType[details.tabId] === 'application/pdf') {
         // URL parsing in JS: <https://gist.github.com/jlong/2428561>
         var parser = document.createElement('a');
@@ -102,7 +105,7 @@
           },
           function checkOnPaperhive(hash, callback) {
             var xhr = new XMLHttpRequest();
-            xhr.open('GET', paperHive + '/articles/bySha/' + hash, true);
+            xhr.open('GET', apiUrl + '/articles/bySha/' + hash, true);
             xhr.responseType = 'json';
             xhr.onload = function() {
               if (this.status === 200) {
@@ -127,7 +130,7 @@
             var xhr = new XMLHttpRequest();
             xhr.open(
               'GET',
-              paperHive + '/articles/' + article._id + '/discussions/',
+              apiUrl + '/articles/' + article._id + '/discussions/',
               true
             );
             xhr.responseType = 'json';

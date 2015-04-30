@@ -94,6 +94,9 @@ gulp.task('images', function() {
 
 // copy static folders to build directory
 gulp.task('static', ['images'], function() {
+  var config = gulp.src('config.json')
+  .pipe(gulp.dest('build'));
+
   var locales = gulp.src('src/_locales/**')
   .pipe(gulp.dest('build/_locales'));
 
@@ -103,7 +106,7 @@ gulp.task('static', ['images'], function() {
   var fontawesome = gulp.src('bower_components/fontawesome/fonts/*')
   .pipe(gulp.dest('build/fonts'));
 
-  return merge(locales, manifest, fontawesome);
+  return merge(config, locales, manifest, fontawesome);
 });
 
 gulp.task('jshint', function() {
