@@ -13,7 +13,7 @@ var getHeaderFromHeaders = function(headers, headerName) {
   }
 };
 
-var tabToMimeType = {};
+global.tabToMimeType = {};
 global.tabToArticle = {};
 global.tabToDiscussions = {};
 
@@ -25,7 +25,8 @@ chrome.webRequest.onHeadersReceived.addListener(
         'content-type'
       );
       // If the header is set, use its value. Otherwise, use undefined.
-      tabToMimeType[details.tabId] = header && header.value.split(';', 1)[0];
+      global.tabToMimeType[details.tabId] =
+        header && header.value.split(';', 1)[0];
     }
   },
   {
@@ -43,13 +44,14 @@ chrome.webRequest.onCompleted.addListener(
         'content-type'
       );
       // If the header is set, use its value. Otherwise, use undefined.
-      tabToMimeType[details.tabId] = header && header.value.split(';', 1)[0];
+      global.tabToMimeType[details.tabId] =
+        header && header.value.split(';', 1)[0];
     }
 
     // TODO put this into a config file
     var paperHive = 'https://paperhive.org/dev/backend/branches/master';
 
-    if (tabToMimeType[details.tabId] === 'application/pdf') {
+    if (global.tabToMimeType[details.tabId] === 'application/pdf') {
       // Replace icon, and do so with a delay. Otherwise it doesn't work
       // reliably, cf.
       // <https://code.google.com/p/chromium/issues/detail?id=123240>.
