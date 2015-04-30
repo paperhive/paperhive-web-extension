@@ -94,12 +94,9 @@ chrome.webRequest.onCompleted.addListener(
           xhr.responseType = 'json';
           xhr.onload = function() {
             if (this.status === 200) {
-              console.log('found the paper!');
               global.tabToArticle[details.tabId] = xhr.response;
               callback(null, xhr.response);
             } else if (this.status === 404) {
-              console.log('didn\'t find the paper!');
-              callback(null, {});
             } else {
               callback('Unexpected return value');
             }
@@ -116,7 +113,6 @@ chrome.webRequest.onCompleted.addListener(
           xhr.responseType = 'json';
           xhr.onload = function() {
             if (this.status === 200) {
-              console.log('Got the discussions!');
               global.tabToDiscussions[details.tabId] = xhr.response;
               var badge;
               if (xhr.response.length < 1) {
