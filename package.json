@@ -27,11 +27,12 @@
     "gulp-uglify": "^1.2.0",
     "gulp-util": "^3.0.4",
     "imagemin-pngquant": "^4.1.0",
-    "jshint-stylish": "~0.1.5",
+    "jshint-stylish": "~1.0.1",
     "lodash": "^3.7.0",
+    "merge-stream": "^0.1.7",
     "vinyl-buffer": "^1.0.0",
     "vinyl-source-stream": "^1.1.0",
-    "watchify": "^3.2.0"
+    "watchify": "^3.2.1"
   },
   "engines": {
     "node": ">=0.8.0"

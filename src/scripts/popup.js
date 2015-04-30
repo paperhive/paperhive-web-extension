@@ -20,6 +20,7 @@ paperhive.controller('PopupCtrl', [
     function(tabs) {
       // for some reason, we need $apply here
       $scope.$apply(function() {
+        console.log('get some');
         $scope.article.meta = bg.tabToArticle[tabs[0].id];
         $scope.article.discussions = bg.tabToDiscussions[tabs[0].id];
         $scope.isPdf = (bg.tabToMimeType[tabs[0].id] === 'application/pdf');

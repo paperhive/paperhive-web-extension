@@ -36,6 +36,21 @@ chrome.webRequest.onHeadersReceived.addListener(
   ['responseHeaders']
 );
 
+var setColorIcon = function(tabId) {
+  // Replace icon, and do so with a delay. Otherwise it doesn't work
+  // reliably, cf.
+  // <https://code.google.com/p/chromium/issues/detail?id=123240>.
+  setTimeout(function() {
+    chrome.browserAction.setIcon({
+      path: {
+        '19': 'images/icon-19.png',
+        '38': 'images/icon-38.png'
+      },
+      tabId: tabId
+    });
+  }, 100);
+};
+
 chrome.webRequest.onCompleted.addListener(
   function(details) {
     if (details.tabId !== -1) {
@@ -52,18 +67,15 @@ chrome.webRequest.onCompleted.addListener(
     var paperHive = 'https://paperhive.org/dev/backend/branches/master';
 
     if (global.tabToMimeType[details.tabId] === 'application/pdf') {
-      // Replace icon, and do so with a delay. Otherwise it doesn't work
-      // reliably, cf.
-      // <https://code.google.com/p/chromium/issues/detail?id=123240>.
-      setTimeout(function() {
-        chrome.browserAction.setIcon({
-          path: {
-            '19': 'images/icon-19.png',
-            '38': 'images/icon-38.png'
-          },
-          tabId: details.tabId
-        });
-      }, 100);
+      // URL parsing in JS: <https://gist.github.com/jlong/2428561>
+      var parser = document.createElement('a');
+      parser.href = details.url;
+      var isWhitelistedSource = (parser.hostname === 'arxiv.org');
+
+      if (isWhitelistedSource) {
+        setColorIcon(details.tabId);
+      }
+
       async.waterfall([
         function getPdfHash(callback) {
           // Since we have no access to the PDF data, we have to
@@ -95,6 +107,14 @@ chrome.webRequest.onCompleted.addListener(
           xhr.onload = function() {
             if (this.status === 200) {
               global.tabToArticle[details.tabId] = xhr.response;
+              // Set the icon to color.
+              // This might have already been done above, we need to do it
+              // here to account for PDFs which are in our system but the host
+              // which serves it is not actually approved. This happens, for
+              // example, if someone copies an arXiv article to another server.
+              if (!isWhitelistedSource) {
+                setColorIcon(details.tabId);
+              }
               callback(null, xhr.response);
             } else if (this.status === 404) {
             } else {
