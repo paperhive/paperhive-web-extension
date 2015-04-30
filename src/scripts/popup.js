@@ -1,5 +1,13 @@
 'use strict';
 
+var angular = require('angular');
+
+var paperhive = angular.module('paperHive', []);
+
+paperhive.controller('PopupCtrl', ['$scope', function($scope) {
+  $scope.test = '123';
+}]);
+
 var bg = chrome.extension.getBackgroundPage();
 
 chrome.tabs.query(

@@ -1,25 +1,89 @@
 <!doctype html>
-<html>
+<!--html lang="en" ng-app="paperHive" ng-strict-di ng-csp-->
+<html lang="en" data-ng-app="paperHive" data-ng-csp="">
   <head>
     <meta charset="utf-8">
     <link href="popup.css" rel="stylesheet">
+    <script src="scripts/popup.js"></script>
   </head>
-  <body>
+  <body ng-controller="PopupCtrl">
+
+    {{test}}
     <header>
-      <h4>PaperHive</h4>
+      <nav class="navbar navbar-default">
+        <div class="container-fluid">
+          <div class="navbar-header">
+            <a class="navbar-brand" href="https://paperhive.org">
+              PaperHive
+            </a>
+          </div>
+        </div>
+      </nav>
     </header>
 
-    <p id="title">
-    </p>
-    <p id="authors">
-    </p>
+    <main>
+    <div id="title">
+    </div>
+    <div id="authors">
+    </div>
 
-    <a id="link" href="#" role="button" class="btn btn-primary">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <ul class="list-inline">
+          <li>
+            <strong>
+              <i class="fa fa-comment"></i> 2 open discussions
+            </strong>
+          </li>
+        </ul>
+      </div>
+      <ul class="list-group">
+        <li class="list-group-item" ng-repeat="discussion in discussions.stored">
+          <a href="{{'articles.discussions.thread' | routeSegmentUrl:
+          {discussionIndex: discussion.index} }}"
+             >
+             <span
+             ng-if="discussion.replies.length > 0"
+             class="pull-right ph-discussion-replies-counter"
+             >
+             <i class="fa fa-comments"></i> {{discussion.replies.length}}
+             </span></a>
+             <h4>
+               <a href="{{'articles.discussions.thread' | routeSegmentUrl:
+               {discussionIndex: discussion.index} }}">
+                 {{discussion.originalAnnotation.title}}</a>
+               <ul
+                  ng-if="discussion.originalAnnotation.tags.length > 0"
+                  class="ph-tags list-inline"
+                  >
+                  <li ng-repeat="tag in discussion.originalAnnotation.tags">
+                    <a href="#" class="btn btn-default">{{tag}}</a>
+                  </li>
+               </ul>
+             </h4>
+             <span class="ph-discussion-subtitle">
+               #{{discussion.index}} opened
+               <span am-time-ago="discussion.originalAnnotation.createdAt"></span>
+               by
+               <a href="/users/{{discussion.originalAnnotation.author.username}}">
+                 {{discussion.originalAnnotation.author.displayName}}
+               </a>
+             </span>
+        </li>
+      </ul>
+    </div>
+
+    <a id="link" target="_blank" href="" role="button" class="btn btn-primary">
       Open in PaperHive
     </a>
-    <!--footer>
-    </footer-->
+    </main>
 
-    <script src="scripts/popup.js"></script>
+    <hr>
+    <footer>
+      <a style="font-size:x-small" target="_blank"
+        href="https://paperhive.org/dev/frontend/branches/master/#/contact">
+        Feedback</a>
+    </footer>
+
   </body>
 </html>

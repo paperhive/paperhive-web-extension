@@ -18,6 +18,7 @@ var imagemin = require('gulp-imagemin');
 var pngquant = require('imagemin-pngquant');
 var less = require('gulp-less');
 var browserify = require('browserify');
+var shim = require('browserify-shim');
 
 var debug = process.env.DEBUG || false;
 
@@ -38,7 +39,6 @@ function handleError(error) {
 // // see
 // https://github.com/gulpjs/gulp/blob/master/docs/recipes/fast-browserify-builds-with-watchify.md
 function js(watch, file) {
-  //var shim = require('browserify-shim');
   var watchify = require('watchify');
 
   var browserifyArgs = _.extend(watchify.args, {debug: true});
@@ -47,9 +47,9 @@ function js(watch, file) {
     browserifyArgs
   );
 
-  //// use shims defined in package.json via 'browser' and 'browserify-shim'
-  //// properties
-  //bundler.transform(shim);
+  // use shims defined in package.json via 'browser' and 'browserify-shim'
+  // properties
+  bundler.transform(shim);
 
   // register watchify
   if (watch) {
