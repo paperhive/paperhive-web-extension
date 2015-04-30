@@ -10,7 +10,7 @@
       <nav class="navbar navbar-default">
         <div class="container-fluid">
           <div class="navbar-header">
-            <a class="navbar-brand" href="https://paperhive.org">
+            <a class="navbar-brand" target="_blank" ng-href="{{frontendUrl}}">
               PaperHive
             </a>
           </div>
@@ -22,7 +22,9 @@
     <div class="panel panel-default">
       <div class="panel-body">
         <h4>
-          {{article.meta.title}}
+          <a target="_blank"
+             ng-href="{{frontendUrl}}/#/articles/{{article.meta._id}}">
+            {{article.meta.title}}</a>
         </h4>
         <div>
           <span ng-repeat="author in article.meta.authors">
@@ -40,7 +42,8 @@
       </div>
       <ul class="list-group">
         <li class="list-group-item" ng-repeat="discussion in article.discussions">
-          <a href="http:">
+          <a target="_blank"
+             ng-href="{{frontendUrl}}/#/articles/{{article.meta._id}}/discussions/{{discussion.index}}">
              <span
              ng-if="discussion.replies.length > 0"
              class="pull-right ph-discussion-replies-counter"
@@ -48,7 +51,8 @@
              <i class="fa fa-comments"></i> {{discussion.replies.length}}
              </span></a>
              <div>
-               <a href="">
+               <a target="_blank"
+                 ng-href="{{frontendUrl}}/#/articles/{{article.meta._id}}/discussions/{{discussion.index}}">
                  {{discussion.originalAnnotation.title}}</a>
                <ul
                   ng-if="discussion.originalAnnotation.tags.length > 0"
@@ -63,7 +67,7 @@
                #{{discussion.index}} opened
                <span am-time-ago="discussion.originalAnnotation.createdAt"></span>
                by
-               <a href="/users/{{discussion.originalAnnotation.author.username}}">
+               <a target="_blank" ng-href="{{frontendUrl}}/#/users/{{discussion.originalAnnotation.author.username}}">
                  {{discussion.originalAnnotation.author.displayName}}
                </a>
              </span>
@@ -71,7 +75,8 @@
       </ul>
     </div>
 
-    <a id="link" target="_blank" href="" role="button" class="btn btn-primary">
+    <a id="link" target="_blank" role="button" class="btn btn-primary"
+             ng-href="{{frontendUrl}}/#/articles/{{article.meta._id}}">
       Open in PaperHive
     </a>
     </main>
@@ -79,7 +84,7 @@
     <hr>
     <footer>
       <a style="font-size:x-small" target="_blank"
-        href="https://paperhive.org/dev/frontend/branches/master/#/contact">
+        ng-href="{{frontendUrl}}/#/contact">
         Feedback</a>
     </footer>
 

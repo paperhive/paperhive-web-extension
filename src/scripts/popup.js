@@ -2,10 +2,15 @@
 
 var angular = require('angular');
 
-var paperhive = angular.module('paperHive', []);
+var paperhive = angular
+.module('paperHive', [])
+.constant('config', require('../../config.json'));
 
-paperhive.controller('PopupCtrl', ['$scope', function($scope) {
+paperhive.controller('PopupCtrl', [
+  'config', '$scope',
+  function(config, $scope) {
   var bg = chrome.extension.getBackgroundPage();
+  $scope.frontendUrl = config.frontendUrl;
   $scope.article = {};
   chrome.tabs.query(
     {

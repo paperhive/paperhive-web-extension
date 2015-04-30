@@ -1,0 +1,5 @@
+{
+  "frontendUrl": "https://paperhive.org/dev/frontend/branches/master",
+  "apiUrl": "https://paperhive.org/dev/backend/branches/master",
+  "apiVersion": "0.0.0"
+}
