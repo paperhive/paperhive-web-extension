@@ -19,6 +19,7 @@ var pngquant = require('imagemin-pngquant');
 var less = require('gulp-less');
 var browserify = require('browserify');
 var shim = require('browserify-shim');
+var merge = require('merge-stream');
 
 var debug = process.env.DEBUG || false;
 
@@ -93,10 +94,16 @@ gulp.task('images', function() {
 
 // copy static folders to build directory
 gulp.task('static', ['images'], function() {
-  gulp.src('src/_locales/**')
+  var locales = gulp.src('src/_locales/**')
   .pipe(gulp.dest('build/_locales'));
-  return gulp.src('src/manifest.json')
+
+  var manifest = gulp.src('src/manifest.json')
   .pipe(gulp.dest('build'));
+
+  var fontawesome = gulp.src('bower_components/fontawesome/fonts/*')
+  .pipe(gulp.dest('build/fonts'));
+
+  return merge(locales, manifest, fontawesome);
 });
 
 gulp.task('jshint', function() {
