@@ -1,14 +1,11 @@
 <!doctype html>
-<!--html lang="en" ng-app="paperHive" ng-strict-di ng-csp-->
-<html lang="en" data-ng-app="paperHive" data-ng-csp="">
+<html lang="en" ng-app="paperHive" ng-strict-di ng-csp>
   <head>
     <meta charset="utf-8">
     <link href="popup.css" rel="stylesheet">
     <script src="scripts/popup.js"></script>
   </head>
   <body ng-controller="PopupCtrl">
-
-    {{test}}
     <header>
       <nav class="navbar navbar-default">
         <div class="container-fluid">
@@ -22,35 +19,36 @@
     </header>
 
     <main>
-    <div id="title">
-    </div>
-    <div id="authors">
+    <div class="panel panel-default">
+      <div class="panel-body">
+        <h4>
+          {{article.meta.title}}
+        </h4>
+        <div>
+          <span ng-repeat="author in article.meta.authors">
+            {{author}}{{$last ? '' :', '}}
+          </span>
+        </div>
+      </div>
     </div>
 
     <div class="panel panel-default">
       <div class="panel-heading">
-        <ul class="list-inline">
-          <li>
-            <strong>
-              <i class="fa fa-comment"></i> 2 open discussions
-            </strong>
-          </li>
-        </ul>
+        <strong>
+          <i class="fa fa-comment"></i> {{article.discussions.length}} open discussions
+        </strong>
       </div>
       <ul class="list-group">
-        <li class="list-group-item" ng-repeat="discussion in discussions.stored">
-          <a href="{{'articles.discussions.thread' | routeSegmentUrl:
-          {discussionIndex: discussion.index} }}"
-             >
+        <li class="list-group-item" ng-repeat="discussion in article.discussions">
+          <a href="http:">
              <span
              ng-if="discussion.replies.length > 0"
              class="pull-right ph-discussion-replies-counter"
              >
              <i class="fa fa-comments"></i> {{discussion.replies.length}}
              </span></a>
-             <h4>
-               <a href="{{'articles.discussions.thread' | routeSegmentUrl:
-               {discussionIndex: discussion.index} }}">
+             <div>
+               <a href="">
                  {{discussion.originalAnnotation.title}}</a>
                <ul
                   ng-if="discussion.originalAnnotation.tags.length > 0"
@@ -60,7 +58,7 @@
                     <a href="#" class="btn btn-default">{{tag}}</a>
                   </li>
                </ul>
-             </h4>
+             </div>
              <span class="ph-discussion-subtitle">
                #{{discussion.index}} opened
                <span am-time-ago="discussion.originalAnnotation.createdAt"></span>
