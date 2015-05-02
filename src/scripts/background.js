@@ -153,7 +153,10 @@
                   if (changeInfo.status === 'complete') {
                     chrome.tabs.sendMessage(
                       details.tabId,
-                      {discussions: xhr.response}
+                      {
+                        article: article,
+                        discussions: xhr.response
+                      }
                     );
                   }
                 });
