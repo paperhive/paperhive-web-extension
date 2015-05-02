@@ -103,7 +103,7 @@ gulp.task('static', ['images'], function() {
   var fontawesome = gulp.src('bower_components/fontawesome/fonts/*')
   .pipe(gulp.dest('build/fonts'));
 
-  return merge(config, locales, manifest, fontawesome);
+  return merge(locales, manifest, fontawesome);
 });
 
 gulp.task('jshint', function() {
