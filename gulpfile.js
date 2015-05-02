@@ -72,13 +72,11 @@ function js(watch, file) {
   return rebundle();
 }
 
-gulp.task('background', ['static'], function() {
-  return js(false, 'background.js');
-});
-gulp.task('popup', ['static'], function() {
-  return js(false, 'popup.js');
-});
-gulp.task('scripts', ['jshint', 'jscs', 'background', 'popup'], function() {
+gulp.task('scripts', ['jshint', 'jscs'], function() {
+  var background = js(false, 'background.js');
+  var popup = js(false, 'popup.js');
+  var content = js(false, 'content.js');
+  merge(background, popup, content);
 });
 
 var imageminOpts = {
@@ -141,13 +139,22 @@ gulp.task('html', ['htmlhint'], function() {
 
 // compile less to css
 gulp.task('styles', function() {
-  return gulp.src('src/styles/popup.less')
+  var popup = gulp.src('src/styles/popup.less')
   .pipe(less())
   .on('error', handleError)
   .pipe(debug ? gutil.noop() : minifyCSS({
     restructuring: false
   }))
   .pipe(gulp.dest('build'));
+  var content = gulp.src('src/styles/content.less')
+  .pipe(less())
+  .on('error', handleError)
+  .pipe(debug ? gutil.noop() : minifyCSS({
+    restructuring: false
+  }))
+  .pipe(gulp.dest('build'));
+
+  return merge(popup, content);
 });
 
 gulp.task('clean', function(cb) {

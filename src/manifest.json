@@ -21,6 +21,15 @@
     },
     "default_popup": "popup.html"
   },
+  "content_scripts": [
+    {
+      "matches": ["*://*/*"],
+      "css": ["content.css"],
+      "js": [
+        "scripts/content.js"
+      ]
+    }
+  ],
   "permissions": [
     "webRequest",
     "activeTab",
