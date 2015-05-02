@@ -5,7 +5,7 @@
   console.log(123);
 
   var elemDiv = document.createElement('div');
-  elemDiv.style.cssText = 'position:absolute;width:20px;height:20px;opacity:0.3;z-index:100;background:#000;';
+  elemDiv.className = 'ph-notification-box';
   document.body.appendChild(elemDiv);
 
 })();
