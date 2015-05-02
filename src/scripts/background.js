@@ -5,7 +5,7 @@
   var config = require('../../config.json');
 
   // from <http://stackoverflow.com/a/21042958/353337>
-  var getHeaderFromHeaders = function(headers, headerName) {
+  var extractHeader = function(headers, headerName) {
     for (var i = 0; i < headers.length; ++i) {
       var header = headers[i];
       if (header.name.toLowerCase() === headerName) {
@@ -20,18 +20,25 @@
 
   chrome.webRequest.onHeadersReceived.addListener(
     function(details) {
-      if (details.tabId !== -1) {
-        var header = getHeaderFromHeaders(
+      if (details.tabId >= 0) {
+        var header = extractHeader(
           details.responseHeaders,
           'content-type'
         );
         // If the header is set, use its value. Otherwise, use undefined.
         global.tabToMimeType[details.tabId] =
           header && header.value.split(';', 1)[0];
+        if (global.tabToMimeType[details.tabId] === 'application/pdf') {
+          // set the page icon
+          // for some reason, this needs to happen with a delay
+          setTimeout(function() {
+            chrome.pageAction.show(details.tabId);
+          }, 100);
+        }
       }
     },
     {
-      urls: ['*://*/*'],
+      urls: ['*://*/*.pdf'],
       types: ['main_frame']
     },
     ['responseHeaders']
@@ -42,7 +49,7 @@
     // reliably, cf.
     // <https://code.google.com/p/chromium/issues/detail?id=123240>.
     setTimeout(function() {
-      chrome.browserAction.setIcon({
+      chrome.pageAction.setIcon({
         path: {
           '19': 'images/icon-19.png',
           '38': 'images/icon-38.png'
@@ -55,7 +62,7 @@
   chrome.webRequest.onCompleted.addListener(
     function(details) {
       if (details.tabId !== -1) {
-        var header = getHeaderFromHeaders(
+        var header = extractHeader(
           details.responseHeaders,
           'content-type'
         );
@@ -132,21 +139,6 @@
             xhr.onload = function() {
               if (this.status === 200) {
                 global.tabToDiscussions[details.tabId] = xhr.response;
-                var badge;
-                if (xhr.response.length < 1) {
-                  badge = null;
-                } else if (xhr.response.length < 1000) {
-                  badge = xhr.response.length.toString();
-                } else {
-                  badge = '999+';
-                }
-                //chrome.browserAction.setBadgeBackgroundColor(
-                //  {color: '#000000'}
-                //);
-                chrome.browserAction.setBadgeText({
-                  text: badge,
-                  tabId: details.tabId
-                });
                 // send message when page (and thus content script) is fully
                 // loaded
                 chrome.tabs.onUpdated.addListener(function(tabId, changeInfo) {
@@ -170,7 +162,7 @@
       }
     },
     {
-      urls: ['*://*/*'],
+      urls: ['*://*/*.pdf'],
       types: ['main_frame']
     },
     ['responseHeaders']
