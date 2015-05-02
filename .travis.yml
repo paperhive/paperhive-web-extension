@@ -2,6 +2,7 @@ language: node_js
 node_js:
   - iojs
 before_script:
+  - cp config.json.default config.json
   - npm install -g bower
   - npm install -g gulp
   # Install (possibly from cache), update packages according to bower.json,

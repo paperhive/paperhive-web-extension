@@ -94,9 +94,6 @@ gulp.task('images', function() {
 
 // copy static folders to build directory
 gulp.task('static', ['images'], function() {
-  var config = gulp.src('config.json')
-  .pipe(gulp.dest('build'));
-
   var locales = gulp.src('src/_locales/**')
   .pipe(gulp.dest('build/_locales'));
 
