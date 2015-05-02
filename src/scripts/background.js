@@ -2,12 +2,8 @@
 (function() {
   var crypto = require('crypto');
   var async = require('async');
-  var $ = require('jquery');
+  var config = require('../../config.json');
 
-  var apiUrl;
-  $.getJSON('../../config.json', function(data) {
-    apiUrl = data.apiUrl;
-  });
 
   // from <http://stackoverflow.com/a/21042958/353337>
   var getHeaderFromHeaders = function(headers, headerName) {
@@ -105,7 +101,7 @@
           },
           function checkOnPaperhive(hash, callback) {
             var xhr = new XMLHttpRequest();
-            xhr.open('GET', apiUrl + '/articles/bySha/' + hash, true);
+            xhr.open('GET', config.apiUrl + '/articles/bySha/' + hash, true);
             xhr.responseType = 'json';
             xhr.onload = function() {
               if (this.status === 200) {
@@ -130,7 +126,7 @@
             var xhr = new XMLHttpRequest();
             xhr.open(
               'GET',
-              apiUrl + '/articles/' + article._id + '/discussions/',
+              config.apiUrl + '/articles/' + article._id + '/discussions/',
               true
             );
             xhr.responseType = 'json';
