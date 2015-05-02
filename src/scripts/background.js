@@ -4,7 +4,6 @@
   var async = require('async');
   var config = require('../../config.json');
 
-
   // from <http://stackoverflow.com/a/21042958/353337>
   var getHeaderFromHeaders = function(headers, headerName) {
     for (var i = 0; i < headers.length; ++i) {
@@ -147,6 +146,16 @@
                 chrome.browserAction.setBadgeText({
                   text: badge,
                   tabId: details.tabId
+                });
+                // send message when page (and thus content script) is fully
+                // loaded
+                chrome.tabs.onUpdated.addListener(function(tabId, changeInfo) {
+                  if (changeInfo.status === 'complete') {
+                    chrome.tabs.sendMessage(
+                      details.tabId,
+                      {discussions: xhr.response}
+                    );
+                  }
                 });
               } else {
                 callback('Unexpected return value');
