@@ -9,7 +9,6 @@ var gutil = require('gulp-util');
 var source = require('vinyl-source-stream');
 var buffer = require('vinyl-buffer');
 var _ = require('lodash');
-var sourcemaps = require('gulp-sourcemaps');
 var streamify = require('gulp-streamify');
 var uglify = require('gulp-uglify');
 var htmlmin = require('gulp-htmlmin');
@@ -62,9 +61,7 @@ function js(watch, file) {
       .on('error', handleError)
       .pipe(source(file))
       .pipe(buffer())
-      .pipe(sourcemaps.init({loadMaps: true}))
-        .pipe(debug ? gutil.noop() : streamify(uglify()))
-      .pipe(sourcemaps.write('./'))
+      .pipe(debug ? gutil.noop() : streamify(uglify()))
       .pipe(gulp.dest('build/scripts/'));
   }
   bundler.on('update', rebundle);
