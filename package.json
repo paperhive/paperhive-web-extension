@@ -9,8 +9,8 @@
   "dependencies": {
   },
   "devDependencies": {
-    "browserify": "^9.0.8",
-    "browserify-shim": "^3.8.5",
+    "browserify": "^10.0.0",
+    "browserify-shim": "^3.8.6",
     "del": "^1.1.1",
     "gulp": "^3.8.11",
     "gulp-htmlhint": "^0.1.1",
@@ -27,7 +27,7 @@
     "gulp-util": "^3.0.4",
     "imagemin-pngquant": "^4.1.0",
     "jshint-stylish": "~1.0.1",
-    "lodash": "^3.7.0",
+    "lodash": "^3.8.0",
     "merge-stream": "^0.1.7",
     "vinyl-buffer": "^1.0.0",
     "vinyl-source-stream": "^1.1.0",

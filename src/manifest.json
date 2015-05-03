@@ -14,13 +14,23 @@
     ],
     "persistent": true
   },
-  "browser_action": {
+  "page_action": {
     "default_icon": {
       "19": "images/icon-grey-19.png",
       "38": "images/icon-grey-38.png"
     },
+    "default_title": "PaperHive",
     "default_popup": "popup.html"
   },
+  "content_scripts": [
+    {
+      "matches": ["*://*/*.pdf"],
+      "css": ["content.css"],
+      "js": [
+        "scripts/content.js"
+      ]
+    }
+  ],
   "permissions": [
     "webRequest",
     "activeTab",

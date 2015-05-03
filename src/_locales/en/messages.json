@@ -1,10 +1,8 @@
 {
   "appName": {
-    "message": "PaperHive",
-    "description": "The name of the application"
+    "message": "PaperHive"
   },
   "appDescription": {
-    "message": "Comment on PDF files",
-    "description": "The description of the application"
+    "message": "Annotate PDF files, share them, and learn from others."
   }
 }
