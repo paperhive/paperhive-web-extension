@@ -17,6 +17,18 @@
   global.tabToMimeType = {};
   global.tabToArticle = {};
   global.tabToDiscussions = {};
+  var tabStatus = {};
+  var responseSender = {};
+
+  chrome.webRequest.onBeforeRequest.addListener(
+    function(details) {
+      tabStatus[details.tabId] = 'loading';
+    },
+    {
+      urls: ['*://*/*.pdf'],
+      types: ['main_frame']
+    }
+  );
 
   chrome.webRequest.onHeadersReceived.addListener(
     function(details) {
@@ -74,6 +86,9 @@
           setColorIcon(details.tabId);
         }
 
+        global.tabToArticle[details.tabId] = null;
+        global.tabToDiscussions[details.tabId] = null;
+
         async.waterfall([
           function getPdfHash(callback) {
             // Since we have no access to the PDF data, we have to
@@ -107,14 +122,16 @@
                 global.tabToArticle[details.tabId] = xhr.response;
                 // Set the icon to color.
                 // This might have already been done above, we need to do it
-                // here to account for PDFs which are in our system but the host
-                // which serves it is not actually approved. This happens, for
-                // example, if someone copies an arXiv article to another server.
+                // here to account for PDFs which are in our system but the
+                // host which serves it is not actually approved. This happens,
+                // for example, if someone copies an arXiv article to another
+                // server.
                 if (!isWhitelistedSource) {
                   setColorIcon(details.tabId);
                 }
                 callback(null, xhr.response);
               } else if (this.status === 404) {
+                callback('PDF not found on PaperHive');
               } else {
                 callback('Unexpected return value');
               }
@@ -132,32 +149,52 @@
             xhr.onload = function() {
               if (this.status === 200) {
                 global.tabToDiscussions[details.tabId] = xhr.response;
-                // send message when page (and thus content script) is fully
-                // loaded
-                chrome.tabs.onUpdated.addListener(function(tabId, changeInfo) {
-                  if (changeInfo.status === 'complete') {
-                    chrome.tabs.sendMessage(
-                      details.tabId,
-                      {
-                        article: article,
-                        discussions: xhr.response
-                      }
-                    );
-                  }
-                });
+                callback(null, article, xhr.response);
               } else {
                 callback('Unexpected return value');
               }
             };
             xhr.send(null);
           }
-        ]);
+        ],
+        function(err, article, discussions) {
+          // make the loading as complete
+          tabStatus[details.tabId] = 'complete';
+          // send a response if so required
+          if (responseSender[details.tabId]) {
+            responseSender[details.tabId]({
+              article: article,
+              discussions: discussions
+            });
+            responseSender[details.tabId] = null;
+          }
+        }
+        );
       }
     },
     {
       urls: ['*://*/*.pdf'],
       types: ['main_frame']
-    },
-    ['responseHeaders']
+    }
   );
+
+  // add listener for content script communication
+  chrome.runtime.onMessage.addListener(
+    function(request, sender, sendResponse) {
+      if (request.getInfo) {
+        if (tabStatus[sender.tab.id] === 'complete') {
+          // send immediate since the tab is fully loaded
+          sendResponse({
+            article: global.tabToArticle[sender.tab.id],
+            discussions: global.tabToDiscussions[sender.tab.id]
+          });
+        } else {
+          // send later
+          responseSender[sender.tab.id] = sendResponse;
+          // returning `true` to indicate that we intend to send later, cf.
+          // <https://developer.chrome.com/extensions/runtime#event-onMessage>
+          return true;
+        }
+      }
+    });
 })();
