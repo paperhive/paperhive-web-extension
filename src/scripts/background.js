@@ -14,9 +14,9 @@
     }
   };
 
-  global.tabToMimeType = {};
-  global.tabToArticle = {};
-  global.tabToDiscussions = {};
+  var tabToMimeType = {};
+  var tabToArticle = {};
+  var tabToDiscussions = {};
   var tabStatus = {};
   var responseSender = {};
 
@@ -38,9 +38,9 @@
           'content-type'
         );
         // If the header is set, use its value. Otherwise, use undefined.
-        global.tabToMimeType[details.tabId] =
+        tabToMimeType[details.tabId] =
           header && header.value.split(';', 1)[0];
-        if (global.tabToMimeType[details.tabId] === 'application/pdf') {
+        if (tabToMimeType[details.tabId] === 'application/pdf') {
           // set the page icon with a delay, see
           // <http://stackoverflow.com/a/30004730/353337>
           setTimeout(function() {
@@ -76,7 +76,7 @@
   // See <https://code.google.com/p/chromium/issues/detail?id=481411>.
   chrome.webRequest.onCompleted.addListener(
     function(details) {
-      if (global.tabToMimeType[details.tabId] === 'application/pdf') {
+      if (tabToMimeType[details.tabId] === 'application/pdf') {
         // URL parsing in JS: <https://gist.github.com/jlong/2428561>
         var parser = document.createElement('a');
         parser.href = details.url;
@@ -86,8 +86,8 @@
           setColorIcon(details.tabId);
         }
 
-        global.tabToArticle[details.tabId] = null;
-        global.tabToDiscussions[details.tabId] = null;
+        tabToArticle[details.tabId] = null;
+        tabToDiscussions[details.tabId] = null;
 
         async.waterfall([
           function getPdfHash(callback) {
@@ -119,7 +119,7 @@
             xhr.responseType = 'json';
             xhr.onload = function() {
               if (this.status === 200) {
-                global.tabToArticle[details.tabId] = xhr.response;
+                tabToArticle[details.tabId] = xhr.response;
                 // Set the icon to color.
                 // This might have already been done above, we need to do it
                 // here to account for PDFs which are in our system but the
@@ -148,7 +148,7 @@
             xhr.responseType = 'json';
             xhr.onload = function() {
               if (this.status === 200) {
-                global.tabToDiscussions[details.tabId] = xhr.response;
+                tabToDiscussions[details.tabId] = xhr.response;
                 callback(null, article, xhr.response);
               } else {
                 callback('Unexpected return value');
@@ -182,15 +182,23 @@
   chrome.runtime.onMessage.addListener(
     function(request, sender, sendResponse) {
       if (request.getInfo) {
-        if (tabStatus[sender.tab.id] === 'complete') {
+        // The tab ID is either in the sender (if a content script sent the
+        // request) or in the request.activeTabId (if popup.js sent the
+        // request).
+        var tabId = request.activeTabId || sender.tab.id;
+        if (!tabId) {
+          console.error('Could not find tab ID.');
+        }
+        if (tabStatus[tabId] === 'complete') {
           // send immediate since the tab is fully loaded
           sendResponse({
-            article: global.tabToArticle[sender.tab.id],
-            discussions: global.tabToDiscussions[sender.tab.id]
+            article: tabToArticle[tabId],
+            discussions: tabToDiscussions[tabId]
           });
         } else {
-          // send later
-          responseSender[sender.tab.id] = sendResponse;
+          // send later, cf.
+          // <http://stackoverflow.com/a/30020271/353337>
+          responseSender[tabId] = sendResponse;
           // returning `true` to indicate that we intend to send later, cf.
           // <https://developer.chrome.com/extensions/runtime#event-onMessage>
           return true;

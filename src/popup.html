@@ -24,10 +24,6 @@
     </header>
 
     <main>
-    <p ng-if="!isPdf">
-      PaperHive only works with PDF pages.
-    </p>
-
     <div ng-if="article.meta" class="panel panel-default">
       <div class="panel-body">
         <h4>
@@ -84,7 +80,7 @@
        >
       Open in PaperHive
     </a>
-    <a ng-if="!article.meta && isPdf && isWhitelistedHost"
+    <a ng-if="!article.meta && isWhitelistedHost"
        id="link" target="_blank" role="button" class="btn btn-primary"
        ng-href="{{frontendUrl}}/articles/new"
        >
