@@ -32,7 +32,7 @@
       <div class="panel-body">
         <h4>
           <a target="_blank"
-             ng-href="{{frontendUrl}}/#/articles/{{article.meta._id}}">
+             ng-href="{{frontendUrl}}/articles/{{article.meta._id}}">
             {{article.meta.title}}</a>
         </h4>
         <div>
@@ -52,7 +52,7 @@
       <ul class="list-group">
         <li class="list-group-item" ng-repeat="discussion in article.discussions">
           <a target="_blank"
-             ng-href="{{frontendUrl}}/#/articles/{{article.meta._id}}/discussions/{{discussion.index}}">
+             ng-href="{{frontendUrl}}/articles/{{article.meta._id}}/discussions/{{discussion.index}}">
              <span
              ng-if="discussion.replies.length > 0"
              class="pull-right ph-discussion-replies-counter"
@@ -61,22 +61,14 @@
              </span></a>
              <div>
                <a target="_blank"
-                 ng-href="{{frontendUrl}}/#/articles/{{article.meta._id}}/discussions/{{discussion.index}}">
+                 ng-href="{{frontendUrl}}/articles/{{article.meta._id}}/discussions/{{discussion.index}}">
                  {{discussion.originalAnnotation.title}}</a>
-               <ul
-                  ng-if="discussion.originalAnnotation.tags.length > 0"
-                  class="ph-tags list-inline"
-                  >
-                  <li ng-repeat="tag in discussion.originalAnnotation.tags">
-                    <a href="#" class="btn btn-default">{{tag}}</a>
-                  </li>
-               </ul>
              </div>
              <span class="ph-discussion-subtitle">
                #{{discussion.index}} opened
                <span am-time-ago="discussion.originalAnnotation.createdAt"></span>
                by
-               <a target="_blank" ng-href="{{frontendUrl}}/#/users/{{discussion.originalAnnotation.author.username}}">
+               <a target="_blank" ng-href="{{frontendUrl}}/users/{{discussion.originalAnnotation.author.username}}">
                  {{discussion.originalAnnotation.author.displayName}}
                </a>
              </span>
@@ -88,19 +80,19 @@
     <footer>
     <a ng-if="article.meta"
        id="link" target="_blank" role="button" class="btn btn-primary"
-       ng-href="{{frontendUrl}}/#/articles/{{article.meta._id}}"
+       ng-href="{{frontendUrl}}/articles/{{article.meta._id}}"
        >
       Open in PaperHive
     </a>
     <a ng-if="!article.meta && isPdf && isWhitelistedHost"
        id="link" target="_blank" role="button" class="btn btn-primary"
-       ng-href="{{frontendUrl}}/#/articles/new"
+       ng-href="{{frontendUrl}}/articles/new"
        >
       Add to PaperHive
     </a>
       <a style="font-size:x-small" target="_blank"
                                    class="pull-right"
-        ng-href="{{frontendUrl}}/#/contact"
+        ng-href="{{frontendUrl}}/contact"
         >
         Feedback</a>
     </footer>

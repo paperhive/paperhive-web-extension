@@ -9,8 +9,6 @@
       getInfo: true
     },
     function(response) {
-      console.log(123);
-      console.log(response);
       if (response.article && response.discussions) {
         var elemDiv = document.createElement('div');
         elemDiv.className = 'ph-notification-box';
@@ -26,7 +24,7 @@
         //elemDiv.appendChild(content);
         elemDiv.innerHTML = elemDiv.innerHTML +
           '<a target="_blank" href="' +
-          config.frontendUrl + '/#/articles/' + response.article._id +
+          config.frontendUrl + '/articles/' + response.article._id +
           '">' +
           text +
           '</a>';
