@@ -29,8 +29,8 @@
         global.tabToMimeType[details.tabId] =
           header && header.value.split(';', 1)[0];
         if (global.tabToMimeType[details.tabId] === 'application/pdf') {
-          // set the page icon
-          // for some reason, this needs to happen with a delay
+          // set the page icon with a delay, see
+          // <http://stackoverflow.com/a/30004730/353337>
           setTimeout(function() {
             chrome.pageAction.show(details.tabId);
           }, 100);
@@ -59,18 +59,11 @@
     }, 100);
   };
 
+  // Chrome 42 doesn't properly fire chrome.webRequest.onCompleted/main_frame
+  // when loading a PDF page. When it's served from cache, it does.
+  // See <https://code.google.com/p/chromium/issues/detail?id=481411>.
   chrome.webRequest.onCompleted.addListener(
     function(details) {
-      if (details.tabId !== -1) {
-        var header = extractHeader(
-          details.responseHeaders,
-          'content-type'
-        );
-        // If the header is set, use its value. Otherwise, use undefined.
-        global.tabToMimeType[details.tabId] =
-          header && header.value.split(';', 1)[0];
-      }
-
       if (global.tabToMimeType[details.tabId] === 'application/pdf') {
         // URL parsing in JS: <https://gist.github.com/jlong/2428561>
         var parser = document.createElement('a');
