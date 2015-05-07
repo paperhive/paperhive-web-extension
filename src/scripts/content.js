@@ -20,16 +20,18 @@
           text = 'There are <strong>' + response.discussions.length +
             '</strong> open discussions for this document.';
         }
-        //var content = document.createTextNode(text);
-        //elemDiv.appendChild(content);
-        elemDiv.innerHTML = elemDiv.innerHTML +
-          '<a target="_blank" href="' +
-          config.frontendUrl + '/articles/' + response.article._id +
-          '">' +
-          text +
-          '</a>';
+        if (text) {
+          //var content = document.createTextNode(text);
+          //elemDiv.appendChild(content);
+          elemDiv.innerHTML = elemDiv.innerHTML +
+            '<a target="_blank" href="' +
+            config.frontendUrl + '/articles/' + response.article._id +
+            '">' +
+            text +
+            '</a>';
 
-        document.body.appendChild(elemDiv);
+          document.body.appendChild(elemDiv);
+        }
       }
     });
 
