@@ -47,12 +47,11 @@
     isColor[tabId] = true;
   };
 
-  var whitelistedHostnames = ['arxiv.org'];
   var isWhitelisted = function(url) {
     // URL parsing in JS: <https://gist.github.com/jlong/2428561>
     var parser = document.createElement('a');
     parser.href = url;
-    return whitelistedHostnames.indexOf(parser.hostname) > -1;
+    return config.whitelistedHostnames.indexOf(parser.hostname) > -1;
   };
 
   chrome.webRequest.onHeadersReceived.addListener(

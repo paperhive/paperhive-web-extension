@@ -1,5 +1,6 @@
 {
   "frontendUrl": "https://paperhive.org",
   "apiUrl": "https://paperhive.org/dev/backend/branches/master",
-  "apiVersion": "0.0.0"
+  "apiVersion": "0.0.0",
+  "whitelistedHostnames": ["arxiv.org"]
 }
