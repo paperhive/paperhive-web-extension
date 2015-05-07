@@ -24,10 +24,7 @@
               $scope.$apply(function() {
                 $scope.article.meta = response.article;
                 $scope.article.discussions = response.discussions;
-                // URL parsing in JS: <https://gist.github.com/jlong/2428561>
-                var parser = document.createElement('a');
-                parser.href = tabs[0].url;
-                $scope.isWhitelistedHost = (parser.hostname === 'arxiv.org');
+                $scope.isWhitelistedHost = response.isWhitelisted;
 
                 // Needs authorization.
                 // TODO figure out what we can do here
