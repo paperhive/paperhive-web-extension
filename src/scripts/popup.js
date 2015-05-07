@@ -20,11 +20,11 @@
           chrome.runtime.sendMessage(
             {getInfo: true, activeTabId: tabs[0].id},
             function(response) {
+              console.log(response);
               // for some reason, we need $apply here
               $scope.$apply(function() {
                 $scope.article.meta = response.article;
                 $scope.article.discussions = response.discussions;
-                $scope.isWhitelistedHost = response.isWhitelisted;
 
                 $scope.submitApproved = function() {
                   $scope.submitting = true;

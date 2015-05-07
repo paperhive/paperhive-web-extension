@@ -27,9 +27,13 @@
     <div ng-if="article.meta" class="panel panel-default">
       <div class="panel-body">
         <h4>
-          <a target="_blank"
+          <a ng-if="article.meta._id"
+             target="_blank"
              ng-href="{{frontendUrl}}/articles/{{article.meta._id}}">
             {{article.meta.title}}</a>
+          <span ng-if="!article.meta._id">
+            {{article.meta.title}}
+          </span>
         </h4>
         <div>
           <span ng-repeat="author in article.meta.authors">
@@ -39,7 +43,9 @@
       </div>
     </div>
 
-    <div ng-if="article.discussions" class="panel panel-default">
+    <div ng-if="article.discussions && article.discussions.length > 0"
+      class="panel panel-default"
+      >
       <div class="panel-heading">
         <strong>
           <i class="fa fa-comment"></i> {{article.discussions.length}} open discussions
@@ -74,13 +80,13 @@
     </main>
 
     <footer>
-      <a ng-if="article.meta"
+      <a ng-if="article.meta._id"
          id="link" target="_blank" role="button" class="btn btn-primary"
          ng-href="{{frontendUrl}}/articles/{{article.meta._id}}"
          >
         Open in PaperHive
       </a>
-      <button ng-if="!article.meta && isWhitelistedHost"
+      <button ng-if="!article.meta._id"
          type="submit"
          ng-click="submitApproved()"
          class="btn btn-primary"
@@ -90,12 +96,12 @@
          Open in PaperHive
       </button>
 
-      <span ng-if="!article.meta && !isWhitelistedHost">
+      <!--span ng-if="!article.meta && !isWhitelistedHost">
         PaperHive only deals with PDFs from whitelisted sources. If you like to
         have more sources included, give us some <a
             ng-href="{{frontendUrl}}/contact" target="_blank">feedback</a>!
-      </span>
-      <a ng-if="article.meta || isWhitelistedHost"
+      </span-->
+      <a
         style="font-size:x-small"
         target="_blank"
         class="pull-right"

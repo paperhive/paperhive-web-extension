@@ -24,7 +24,7 @@
   },
   "content_scripts": [
     {
-      "matches": ["*://*/*.pdf"],
+      "matches": ["*://*/*"],
       "css": ["content.css"],
       "js": [
         "scripts/content.js"
@@ -34,6 +34,6 @@
   "permissions": [
     "webRequest",
     "activeTab",
-    "*://*/*.pdf"
+    "*://*/*"
   ]
 }
