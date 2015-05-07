@@ -141,7 +141,9 @@
   // See <https://code.google.com/p/chromium/issues/detail?id=481411>.
   chrome.webRequest.onCompleted.addListener(
     function(details) {
-      if (!tabToArticle[details.tabId]) {
+      if (!tabToArticle[details.tabId] &&
+          tabToMimeType[details.tabId] === 'application/pdf'
+         ) {
         tabToDiscussions[details.tabId] = null;
 
         async.waterfall([
@@ -226,7 +228,7 @@
       }
     },
     {
-      urls: ['*://*/*'],
+      urls: ['*://*/*.pdf'],
       types: ['main_frame']
     }
   );
