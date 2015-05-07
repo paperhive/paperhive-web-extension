@@ -74,20 +74,27 @@
     </main>
 
     <footer>
-    <a ng-if="article.meta"
-       id="link" target="_blank" role="button" class="btn btn-primary"
-       ng-href="{{frontendUrl}}/articles/{{article.meta._id}}"
-       >
-      Open in PaperHive
-    </a>
-    <a ng-if="!article.meta && isWhitelistedHost"
-       id="link" target="_blank" role="button" class="btn btn-primary"
-       ng-href="{{frontendUrl}}/articles/new"
-       >
-      Add to PaperHive
-    </a>
-      <a style="font-size:x-small" target="_blank"
-                                   class="pull-right"
+      <a ng-if="article.meta"
+         id="link" target="_blank" role="button" class="btn btn-primary"
+         ng-href="{{frontendUrl}}/articles/{{article.meta._id}}"
+         >
+        Open in PaperHive
+      </a>
+      <a ng-if="!article.meta && isWhitelistedHost"
+         id="link" target="_blank" role="button" class="btn btn-primary"
+         ng-href="{{frontendUrl}}/articles/new"
+         >
+        Open in PaperHive
+      </a>
+      <span ng-if="!article.meta && !isWhitelistedHost">
+        PaperHive only deals with PDFs from whitelisted sources. If you like to
+        have more sources included, give us some <a
+            ng-href="{{frontendUrl}}/contact" target="_blank">feedback</a>!
+      </span>
+      <a ng-if="article.meta || isWhitelistedHost"
+        style="font-size:x-small"
+        target="_blank"
+        class="pull-right"
         ng-href="{{frontendUrl}}/contact"
         >
         Feedback</a>
