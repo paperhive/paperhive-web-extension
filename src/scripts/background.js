@@ -16,12 +16,10 @@
 
   var tabToArticle = {};
   var tabToDiscussions = {};
-  var tabStatus = {};
   var responseSender = {};
 
   chrome.webRequest.onBeforeRequest.addListener(
     function(details) {
-      tabStatus[details.tabId] = 'loading';
       if (details.tabId >= 0) {
         async.waterfall([
           function checkOnPaperHive(callback) {
@@ -242,7 +240,6 @@
       //  ],
       //  function(err, article, discussions) {
       //    // make the loading as complete
-      //    tabStatus[details.tabId] = 'complete';
       //    // send a response if so required
       //    if (responseSender[details.tabId]) {
       //      responseSender[details.tabId]({
