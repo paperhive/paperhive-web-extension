@@ -26,18 +26,29 @@
                 $scope.article.discussions = response.discussions;
                 $scope.isWhitelistedHost = response.isWhitelisted;
 
-                // Needs authorization.
-                // TODO figure out what we can do here
                 $scope.submitApproved = function() {
                   $scope.submitting = true;
                   $http.post(config.apiUrl + '/articles/sources', undefined, {
                     params: {handle: tabs[0].url},
                   })
-                  .success(function() {
+                  .success(function(article) {
                     $scope.submitting = false;
+                    chrome.tabs.create({
+                      url: config.frontendUrl + '/articles/' + article._id
+                    });
                   })
-                  .error(function() {
+                  .error(function(data) {
                     $scope.submitting = false;
+                    var message;
+                    if (data && data.message) {
+                      message = data.message;
+                    } else {
+                      message = 'could not add article (unknown reason)';
+                    }
+                    //notificationService.notifications.push({
+                    //  type: 'error',
+                    //  message: message
+                    //});
                   });
                 };
               });

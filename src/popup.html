@@ -80,12 +80,16 @@
          >
         Open in PaperHive
       </a>
-      <a ng-if="!article.meta && isWhitelistedHost"
-         id="link" target="_blank" role="button" class="btn btn-primary"
-         ng-href="{{frontendUrl}}/articles/new"
+      <button ng-if="!article.meta && isWhitelistedHost"
+         type="submit"
+         ng-click="submitApproved()"
+         class="btn btn-primary"
          >
-        Open in PaperHive
-      </a>
+         <i class="fa fa-fw fa-plus" ng-if="!submitting"></i>
+         <i class="fa fa-fw fa-spinner fa-spin" ng-if="submitting"></i>
+         Open in PaperHive
+      </button>
+
       <span ng-if="!article.meta && !isWhitelistedHost">
         PaperHive only deals with PDFs from whitelisted sources. If you like to
         have more sources included, give us some <a
