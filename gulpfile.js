@@ -81,14 +81,9 @@ var imageminOpts = {
   svgoPlugins: [{removeViewBox: false}],
   use: [pngquant()]
 };
-gulp.task('images', function() {
-  return gulp.src('src/images/*')
-  .pipe(imagemin(imageminOpts))
-  .pipe(gulp.dest('build/images'));
-});
 
 // copy static folders to build directory
-gulp.task('static', ['images'], function() {
+gulp.task('static', function() {
   var locales = gulp.src('src/_locales/**')
   .pipe(gulp.dest('build/_locales'));
 
@@ -98,7 +93,11 @@ gulp.task('static', ['images'], function() {
   var fontawesome = gulp.src('bower_components/fontawesome/fonts/*')
   .pipe(gulp.dest('build/fonts'));
 
-  return merge(locales, manifest, fontawesome);
+  var images = gulp.src('src/images/*')
+  .pipe(debug ? gutil.noop() : imagemin(imageminOpts))
+  .pipe(gulp.dest('build/images'));
+
+  return merge(locales, manifest, fontawesome, images);
 });
 
 gulp.task('jshint', function() {
