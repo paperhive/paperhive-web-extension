@@ -21,6 +21,8 @@
   chrome.webRequest.onBeforeRequest.addListener(
     function(details) {
       if (details.tabId >= 0) {
+        tabToArticle[details.tabId] = undefined;
+        tabToDiscussions[details.tabId] = undefined;
         async.waterfall([
           function checkOnPaperHive(callback) {
             // We could actually check on every single page, but we don't want
@@ -52,7 +54,6 @@
           },
           function fetchDiscussions(article, callback) {
             if (article) {
-              console.log(article);
               tabToArticle[details.tabId] = article;
               // set icon
               setTimeout(function() {
