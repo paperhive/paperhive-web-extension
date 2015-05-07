@@ -17,6 +17,7 @@
   var tabToMimeType = {};
   var tabToArticle = {};
   var tabToDiscussions = {};
+  var tabToWhitelisted = {};
   var tabStatus = {};
   var responseSender = {};
 
@@ -30,8 +31,32 @@
     }
   );
 
+  var isColor = {};
+  var setColorIcon = function(tabId) {
+    // Replace icon, and do so with a delay. Otherwise it doesn't work
+    // reliably, cf.
+    // <http://stackoverflow.com/a/30004730/353337>
+    // <https://code.google.com/p/chromium/issues/detail?id=123240>.
+    chrome.pageAction.setIcon({
+      path: {
+        '19': 'images/icon-19.png',
+        '38': 'images/icon-38.png'
+      },
+      tabId: tabId
+    });
+    isColor[tabId] = true;
+  };
+
+  var isWhitelisted = function(url) {
+    // URL parsing in JS: <https://gist.github.com/jlong/2428561>
+    var parser = document.createElement('a');
+    parser.href = url;
+    return config.whitelistedHostnames.indexOf(parser.hostname) > -1;
+  };
+
   chrome.webRequest.onHeadersReceived.addListener(
     function(details) {
+      tabToWhitelisted[details.tabId] = false;
       if (details.tabId >= 0) {
         var header = extractHeader(
           details.responseHeaders,
@@ -41,10 +66,12 @@
         tabToMimeType[details.tabId] =
           header && header.value.split(';', 1)[0];
         if (tabToMimeType[details.tabId] === 'application/pdf') {
-          // set the page icon with a delay, see
-          // <http://stackoverflow.com/a/30004730/353337>
           setTimeout(function() {
             chrome.pageAction.show(details.tabId);
+            tabToWhitelisted[details.tabId] = isWhitelisted(details.url);
+            if (tabToWhitelisted[details.tabId]) {
+              setColorIcon(details.tabId);
+            }
           }, 100);
         }
       }
@@ -56,36 +83,12 @@
     ['responseHeaders']
   );
 
-  var setColorIcon = function(tabId) {
-    // Replace icon, and do so with a delay. Otherwise it doesn't work
-    // reliably, cf.
-    // <https://code.google.com/p/chromium/issues/detail?id=123240>.
-    setTimeout(function() {
-      chrome.pageAction.setIcon({
-        path: {
-          '19': 'images/icon-19.png',
-          '38': 'images/icon-38.png'
-        },
-        tabId: tabId
-      });
-    }, 100);
-  };
-
   // Chrome 42 doesn't properly fire chrome.webRequest.onCompleted/main_frame
   // when loading a PDF page. When it's served from cache, it does.
   // See <https://code.google.com/p/chromium/issues/detail?id=481411>.
   chrome.webRequest.onCompleted.addListener(
     function(details) {
       if (tabToMimeType[details.tabId] === 'application/pdf') {
-        // URL parsing in JS: <https://gist.github.com/jlong/2428561>
-        var parser = document.createElement('a');
-        parser.href = details.url;
-        var isWhitelistedSource = (parser.hostname === 'arxiv.org');
-
-        if (isWhitelistedSource) {
-          setColorIcon(details.tabId);
-        }
-
         tabToArticle[details.tabId] = null;
         tabToDiscussions[details.tabId] = null;
 
@@ -126,7 +129,7 @@
                 // host which serves it is not actually approved. This happens,
                 // for example, if someone copies an arXiv article to another
                 // server.
-                if (!isWhitelistedSource) {
+                if (!isColor[details.tabId]) {
                   setColorIcon(details.tabId);
                 }
                 callback(null, xhr.response);
@@ -164,7 +167,8 @@
           if (responseSender[details.tabId]) {
             responseSender[details.tabId]({
               article: article,
-              discussions: discussions
+              discussions: discussions,
+              isWhitelisted: tabToWhitelisted[details.tabId]
             });
             responseSender[details.tabId] = null;
           }
@@ -190,10 +194,11 @@
           console.error('Could not find tab ID.');
         }
         if (tabStatus[tabId] === 'complete') {
-          // send immediate since the tab is fully loaded
+          // send immediately since the tab is fully loaded
           sendResponse({
             article: tabToArticle[tabId],
-            discussions: tabToDiscussions[tabId]
+            discussions: tabToDiscussions[tabId],
+            isWhitelisted: tabToWhitelisted[tabId]
           });
         } else {
           // send later, cf.
