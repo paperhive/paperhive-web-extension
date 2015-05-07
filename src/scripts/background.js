@@ -4,29 +4,89 @@
   var async = require('async');
   var config = require('../../config.json');
 
-  // from <http://stackoverflow.com/a/21042958/353337>
-  var extractHeader = function(headers, headerName) {
-    for (var i = 0; i < headers.length; ++i) {
-      var header = headers[i];
-      if (header.name.toLowerCase() === headerName) {
-        return header;
-      }
-    }
-  };
-
-  var tabToMimeType = {};
   var tabToArticle = {};
   var tabToDiscussions = {};
-  var tabToWhitelisted = {};
-  var tabStatus = {};
+  var tabToMimeType = {};
   var responseSender = {};
 
   chrome.webRequest.onBeforeRequest.addListener(
     function(details) {
-      tabStatus[details.tabId] = 'loading';
+      if (details.tabId >= 0) {
+        tabToArticle[details.tabId] = undefined;
+        tabToDiscussions[details.tabId] = undefined;
+        async.waterfall([
+          function checkOnPaperHive(callback) {
+            // We could actually check on every single page, but we don't want
+            // to put the PaperHive backend under too much load. Hence, filter
+            // by hostname.
+            // URL parsing in JS: <https://gist.github.com/jlong/2428561>
+            var parser = document.createElement('a');
+            parser.href = details.url;
+            if (config.whitelistedHostnames.indexOf(parser.hostname) < 0) {
+              callback(null, undefined);
+            }
+
+            var xhr = new XMLHttpRequest();
+            xhr.open(
+              'GET',
+              config.apiUrl + '/articles/sources?handle=' + details.url,
+              true
+            );
+            xhr.responseType = 'json';
+            xhr.onload = function() {
+              if (this.status === 200) {
+                callback(null, this.response);
+              } else {
+                callback('Unexpected return value');
+              }
+            };
+            xhr.send(null);
+          },
+          function fetchDiscussions(article, callback) {
+            if (article) {
+              tabToArticle[details.tabId] = article;
+              // set icon
+              setTimeout(function() {
+                chrome.pageAction.show(details.tabId);
+                setColorIcon(details.tabId);
+              }, 100);
+
+              if (article._id) {
+                // fetch discussions
+                var xhr = new XMLHttpRequest();
+                xhr.open(
+                  'GET',
+                  config.apiUrl + '/articles/' + article._id + '/discussions/',
+                  true
+                );
+                xhr.responseType = 'json';
+                xhr.onload = function() {
+                  if (this.status === 200) {
+                    tabToDiscussions[details.tabId] = xhr.response;
+                    callback(null, article, xhr.response);
+                  } else {
+                    callback('Unexpected return value');
+                  }
+                };
+                xhr.send(null);
+              }
+            }
+          },
+        ],
+        function(err, article, discussions) {
+          // send a response if so required
+          if (responseSender[details.tabId]) {
+            responseSender[details.tabId]({
+              article: article,
+              discussions: discussions
+            });
+            responseSender[details.tabId] = null;
+          }
+        });
+      }
     },
     {
-      urls: ['*://*/*.pdf'],
+      urls: ['*://*/*'],
       types: ['main_frame']
     }
   );
@@ -47,17 +107,19 @@
     isColor[tabId] = true;
   };
 
-  var isWhitelisted = function(url) {
-    // URL parsing in JS: <https://gist.github.com/jlong/2428561>
-    var parser = document.createElement('a');
-    parser.href = url;
-    return config.whitelistedHostnames.indexOf(parser.hostname) > -1;
+  // from <http://stackoverflow.com/a/21042958/353337>
+  var extractHeader = function(headers, headerName) {
+    for (var i = 0; i < headers.length; ++i) {
+      var header = headers[i];
+      if (header.name.toLowerCase() === headerName) {
+        return header;
+      }
+    }
   };
 
   chrome.webRequest.onHeadersReceived.addListener(
     function(details) {
-      tabToWhitelisted[details.tabId] = false;
-      if (details.tabId >= 0) {
+      if (!tabToArticle[details.tabId] && details.tabId >= 0) {
         var header = extractHeader(
           details.responseHeaders,
           'content-type'
@@ -65,15 +127,6 @@
         // If the header is set, use its value. Otherwise, use undefined.
         tabToMimeType[details.tabId] =
           header && header.value.split(';', 1)[0];
-        if (tabToMimeType[details.tabId] === 'application/pdf') {
-          setTimeout(function() {
-            chrome.pageAction.show(details.tabId);
-            tabToWhitelisted[details.tabId] = isWhitelisted(details.url);
-            if (tabToWhitelisted[details.tabId]) {
-              setColorIcon(details.tabId);
-            }
-          }, 100);
-        }
       }
     },
     {
@@ -88,8 +141,9 @@
   // See <https://code.google.com/p/chromium/issues/detail?id=481411>.
   chrome.webRequest.onCompleted.addListener(
     function(details) {
-      if (tabToMimeType[details.tabId] === 'application/pdf') {
-        tabToArticle[details.tabId] = null;
+      if (!tabToArticle[details.tabId] &&
+          tabToMimeType[details.tabId] === 'application/pdf'
+         ) {
         tabToDiscussions[details.tabId] = null;
 
         async.waterfall([
@@ -116,7 +170,7 @@
             };
             xhr.send(null);
           },
-          function checkOnPaperhive(hash, callback) {
+          function checkBySha(hash, callback) {
             var xhr = new XMLHttpRequest();
             xhr.open('GET', config.apiUrl + '/articles/bySha/' + hash, true);
             xhr.responseType = 'json';
@@ -129,9 +183,8 @@
                 // host which serves it is not actually approved. This happens,
                 // for example, if someone copies an arXiv article to another
                 // server.
-                if (!isColor[details.tabId]) {
-                  setColorIcon(details.tabId);
-                }
+                chrome.pageAction.show(details.tabId);
+                setColorIcon(details.tabId);
                 callback(null, xhr.response);
               } else if (this.status === 404) {
                 callback('PDF not found on PaperHive');
@@ -162,13 +215,11 @@
         ],
         function(err, article, discussions) {
           // make the loading as complete
-          tabStatus[details.tabId] = 'complete';
           // send a response if so required
           if (responseSender[details.tabId]) {
             responseSender[details.tabId]({
               article: article,
-              discussions: discussions,
-              isWhitelisted: tabToWhitelisted[details.tabId]
+              discussions: discussions
             });
             responseSender[details.tabId] = null;
           }
@@ -193,12 +244,11 @@
         if (!tabId) {
           console.error('Could not find tab ID.');
         }
-        if (tabStatus[tabId] === 'complete') {
+        if (tabToArticle[tabId]) {
           // send immediately since the tab is fully loaded
           sendResponse({
             article: tabToArticle[tabId],
-            discussions: tabToDiscussions[tabId],
-            isWhitelisted: tabToWhitelisted[tabId]
+            discussions: tabToDiscussions[tabId]
           });
         } else {
           // send later, cf.
