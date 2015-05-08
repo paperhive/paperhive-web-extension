@@ -79,7 +79,7 @@
     </div>
     </main>
 
-    <footer>
+    <footer class="ph-footer">
       <a ng-if="article.meta._id"
          id="link" target="_blank" role="button" class="btn btn-primary"
          ng-href="{{frontendUrl}}/articles/{{article.meta._id}}"
@@ -102,9 +102,8 @@
             ng-href="{{frontendUrl}}/contact" target="_blank">feedback</a>!
       </span-->
       <a
-        style="font-size:x-small"
+        class="ph-feedback"
         target="_blank"
-        class="pull-right"
         ng-href="{{frontendUrl}}/contact"
         >
         Feedback</a>
