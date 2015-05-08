@@ -1,5 +1,5 @@
 /**
- * @license PaperHive Chrome Extension v0.0.1
+ * @license PaperHive Chrome Extension v0.0.2
  * (c) 2015 Nico Schlömer <nico.schloemer@gmail.com>
  * License: GPL-3
  */
