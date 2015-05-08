@@ -61,7 +61,9 @@ function js(watch, file) {
       .on('error', handleError)
       .pipe(source(file))
       .pipe(buffer())
-      .pipe(debug ? gutil.noop() : streamify(uglify()))
+      .pipe(debug ? gutil.noop() : streamify(uglify({
+       preserveComments: 'some'
+      })))
       .pipe(gulp.dest('build/scripts/'));
   }
   bundler.on('update', rebundle);
