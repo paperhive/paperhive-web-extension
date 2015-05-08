@@ -1,4 +1,10 @@
+/**
+ * @license PaperHive Chrome Extension v0.0.1
+ * (c) 2015 Nico Schlömer <nico.schloemer@gmail.com>
+ * License: GPL-3
+ */
 'use strict';
+
 (function() {
   var angular = require('angular');
 
@@ -20,7 +26,6 @@
           chrome.runtime.sendMessage(
             {getInfo: true, activeTabId: tabs[0].id},
             function(response) {
-              console.log(response);
               // for some reason, we need $apply here
               $scope.$apply(function() {
                 $scope.article.meta = response.article;

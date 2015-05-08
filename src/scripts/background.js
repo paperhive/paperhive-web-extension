@@ -1,3 +1,8 @@
+/**
+ * @license PaperHive Chrome Extension v0.0.1
+ * (c) 2015 Nico Schlömer <nico.schloemer@gmail.com>
+ * License: GPL-3
+ */
 'use strict';
 (function() {
   var crypto = require('crypto');
