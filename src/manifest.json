@@ -33,6 +33,7 @@
   ],
   "permissions": [
     "webRequest",
+    "webNavigation",
     "activeTab",
     "*://*/*"
   ]

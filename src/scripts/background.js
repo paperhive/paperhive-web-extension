@@ -9,7 +9,11 @@
   var tabToMimeType = {};
   var responseSender = {};
 
-  chrome.webRequest.onBeforeRequest.addListener(
+  // Use webNavigation here since we use page actions. To `show` a page action,
+  // one needs to be sure that the omnibox isn't updated anymore. This state is
+  // not tracked by webRequest, see
+  // <http://stackoverflow.com/a/30004730/353337>.
+  chrome.webNavigation.onCommitted.addListener(
     function(details) {
       if (details.tabId >= 0) {
         tabToArticle[details.tabId] = undefined;
@@ -46,10 +50,8 @@
             if (article) {
               tabToArticle[details.tabId] = article;
               // set icon
-              setTimeout(function() {
-                chrome.pageAction.show(details.tabId);
-                setColorIcon(details.tabId);
-              }, 100);
+              chrome.pageAction.show(details.tabId);
+              setColorIcon(details.tabId);
 
               if (article._id) {
                 // fetch discussions
@@ -93,10 +95,6 @@
 
   var isColor = {};
   var setColorIcon = function(tabId) {
-    // Replace icon, and do so with a delay. Otherwise it doesn't work
-    // reliably, cf.
-    // <http://stackoverflow.com/a/30004730/353337>
-    // <https://code.google.com/p/chromium/issues/detail?id=123240>.
     chrome.pageAction.setIcon({
       path: {
         '19': 'images/icon-19.png',
