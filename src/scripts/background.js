@@ -32,7 +32,7 @@
             var parser = document.createElement('a');
             parser.href = details.url;
             if (config.whitelistedHostnames.indexOf(parser.hostname) < 0) {
-              callback(null, undefined);
+              return callback('Host not whitelisted', undefined);
             }
 
             var xhr = new XMLHttpRequest();
@@ -44,9 +44,9 @@
             xhr.responseType = 'json';
             xhr.onload = function() {
               if (this.status === 200) {
-                callback(null, this.response);
+                return callback(null, this.response);
               } else {
-                callback('Unexpected return value');
+                return callback('Unexpected return value');
               }
             };
             xhr.send(null);
@@ -70,9 +70,9 @@
                 xhr.onload = function() {
                   if (this.status === 200) {
                     tabToDiscussions[details.tabId] = xhr.response;
-                    callback(null, article, xhr.response);
+                    return callback(null, article, xhr.response);
                   } else {
-                    callback('Unexpected return value');
+                    return callback('Unexpected return value');
                   }
                 };
                 xhr.send(null);
@@ -165,10 +165,10 @@
                 a.onloadend = function() {
                   var hash = crypto.createHash('sha1');
                   hash.update(a.result, 'binary');
-                  callback(null, hash.digest('hex'));
+                  return callback(null, hash.digest('hex'));
                 };
               } else {
-                callback('Could not fetch PDF.');
+                return callback('Could not fetch PDF.');
               }
             };
             xhr.send(null);
@@ -188,11 +188,11 @@
                 // server.
                 chrome.pageAction.show(details.tabId);
                 setColorIcon(details.tabId);
-                callback(null, xhr.response);
+                return callback(null, xhr.response);
               } else if (this.status === 404) {
-                callback('PDF not found on PaperHive');
+                return callback('PDF not found on PaperHive');
               } else {
-                callback('Unexpected return value');
+                return callback('Unexpected return value');
               }
             };
             xhr.send(null);
@@ -208,9 +208,9 @@
             xhr.onload = function() {
               if (this.status === 200) {
                 tabToDiscussions[details.tabId] = xhr.response;
-                callback(null, article, xhr.response);
+                return callback(null, article, xhr.response);
               } else {
-                callback('Unexpected return value');
+                return callback('Unexpected return value');
               }
             };
             xhr.send(null);
