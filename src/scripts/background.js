@@ -12,13 +12,6 @@
   var tabData = {};
   var responseSender = {};
 
-  // reset tabData
-  chrome.tabs.onUpdated.addListener(
-    function(tabId) {
-      tabData[tabId] = undefined;
-    }
-  );
-
   var handleResponse = function(err, tabId, article, discussions) {
     if (err) {
       console.error(err);
@@ -60,6 +53,35 @@
       xhr.send(null);
     }
   };
+
+  var isColor = {};
+  var setColorIcon = function(tabId) {
+    chrome.pageAction.setIcon({
+      path: {
+        '19': 'images/icon-19.png',
+        '38': 'images/icon-38.png'
+      },
+      tabId: tabId
+    });
+    isColor[tabId] = true;
+  };
+
+  // from <http://stackoverflow.com/a/21042958/353337>
+  var extractHeader = function(headers, headerName) {
+    for (var i = 0; i < headers.length; ++i) {
+      var header = headers[i];
+      if (header.name.toLowerCase() === headerName) {
+        return header;
+      }
+    }
+  };
+
+  // reset tabData
+  chrome.tabs.onUpdated.addListener(
+    function(tabId) {
+      tabData[tabId] = undefined;
+    }
+  );
 
   // Use webNavigation here since we use page actions. To `show` a page action,
   // one needs to be sure that the omnibox isn't updated anymore. This state is
@@ -108,28 +130,6 @@
       types: ['main_frame']
     }
   );
-
-  var isColor = {};
-  var setColorIcon = function(tabId) {
-    chrome.pageAction.setIcon({
-      path: {
-        '19': 'images/icon-19.png',
-        '38': 'images/icon-38.png'
-      },
-      tabId: tabId
-    });
-    isColor[tabId] = true;
-  };
-
-  // from <http://stackoverflow.com/a/21042958/353337>
-  var extractHeader = function(headers, headerName) {
-    for (var i = 0; i < headers.length; ++i) {
-      var header = headers[i];
-      if (header.name.toLowerCase() === headerName) {
-        return header;
-      }
-    }
-  };
 
   // Chrome 42 doesn't properly fire chrome.webRequest.onCompleted/main_frame
   // when loading a PDF page. When it's served from cache, it does.
