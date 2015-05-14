@@ -81,6 +81,15 @@
     }
   };
 
+  // turns a hostname whitelist into a regexp list
+  var whitelistToRegexp = function(whitelist) {
+    var regexplist = [];
+    for (var i = 0; i < whitelist.length; i++) {
+      regexplist.push('*://' + whitelist[i] + '/*');
+    }
+    return regexplist;
+  };
+
   // reset tabData
   chrome.tabs.onUpdated.addListener(
     function(tabId) {
@@ -95,15 +104,6 @@
   chrome.webNavigation.onCommitted.addListener(
     function(details) {
       if (!tabData[details.tabId]) {
-        // We could actually check on every single page, but we don't want
-        // to put the PaperHive backend under too much load. Hence, filter
-        // by hostname.
-        // URL parsing in JS: <https://gist.github.com/jlong/2428561>
-        var parser = document.createElement('a');
-        parser.href = details.url;
-        if (config.whitelistedHostnames.indexOf(parser.hostname) < 0) {
-          return;
-        }
         async.waterfall(
           [
             function getArticlebyUrl(callback) {
@@ -130,7 +130,7 @@
       }
     },
     {
-      urls: ['*://*/*'],
+      urls: whitelistToRegexp(config.whitelistedHostnames),
       types: ['main_frame']
     }
   );
