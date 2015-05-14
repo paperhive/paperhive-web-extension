@@ -118,7 +118,7 @@
                 if (this.status === 200) {
                   return callback(null, details.tabId, this.response);
                 } else {
-                  return callback('Unexpected return value');
+                  return callback(null, details.tabId, null);
                 }
               };
               xhr.send(null);
