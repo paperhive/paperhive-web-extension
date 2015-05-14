@@ -14,6 +14,46 @@
   var tabToMimeType = {};
   var responseSender = {};
 
+  var handleResponses = function(err, tabId, article, discussions) {
+    // send a response if so required
+    if (responseSender[tabId]) {
+      responseSender[tabId]({
+        article: article,
+        discussions: discussions
+      });
+      responseSender[tabId] = null;
+    }
+  };
+
+  var fetchDiscussions = function(tabId, article, callback) {
+    if (article) {
+      tabToArticle[tabId] = article;
+      // set icon
+      chrome.pageAction.show(tabId);
+      setColorIcon(tabId);
+
+      if (article._id) {
+        // fetch discussions
+        var xhr = new XMLHttpRequest();
+        xhr.open(
+          'GET',
+          config.apiUrl + '/articles/' + article._id + '/discussions/',
+          true
+        );
+        xhr.responseType = 'json';
+        xhr.onload = function() {
+          if (this.status === 200) {
+            tabToDiscussions[tabId] = xhr.response;
+            return callback(null, tabId, article, xhr.response);
+          } else {
+            return callback('Unexpected return value');
+          }
+        };
+        xhr.send(null);
+      }
+    }
+  };
+
   // Use webNavigation here since we use page actions. To `show` a page action,
   // one needs to be sure that the omnibox isn't updated anymore. This state is
   // not tracked by webRequest, see
@@ -23,73 +63,39 @@
       if (details.tabId >= 0) {
         tabToArticle[details.tabId] = undefined;
         tabToDiscussions[details.tabId] = undefined;
-        async.waterfall([
-          function checkOnPaperHive(callback) {
-            // We could actually check on every single page, but we don't want
-            // to put the PaperHive backend under too much load. Hence, filter
-            // by hostname.
-            // URL parsing in JS: <https://gist.github.com/jlong/2428561>
-            var parser = document.createElement('a');
-            parser.href = details.url;
-            if (config.whitelistedHostnames.indexOf(parser.hostname) < 0) {
-              return callback('Host not whitelisted', undefined);
-            }
-
-            var xhr = new XMLHttpRequest();
-            xhr.open(
-              'GET',
-              config.apiUrl + '/articles/sources?handle=' + details.url,
-              true
-            );
-            xhr.responseType = 'json';
-            xhr.onload = function() {
-              if (this.status === 200) {
-                return callback(null, this.response);
-              } else {
-                return callback('Unexpected return value');
+        async.waterfall(
+          [
+            function checkOnPaperHive(callback) {
+              // We could actually check on every single page, but we don't want
+              // to put the PaperHive backend under too much load. Hence, filter
+              // by hostname.
+              // URL parsing in JS: <https://gist.github.com/jlong/2428561>
+              var parser = document.createElement('a');
+              parser.href = details.url;
+              if (config.whitelistedHostnames.indexOf(parser.hostname) < 0) {
+                return callback('Host not whitelisted', undefined);
               }
-            };
-            xhr.send(null);
-          },
-          function fetchDiscussions(article, callback) {
-            if (article) {
-              tabToArticle[details.tabId] = article;
-              // set icon
-              chrome.pageAction.show(details.tabId);
-              setColorIcon(details.tabId);
 
-              if (article._id) {
-                // fetch discussions
-                var xhr = new XMLHttpRequest();
-                xhr.open(
-                  'GET',
-                  config.apiUrl + '/articles/' + article._id + '/discussions/',
-                  true
-                );
-                xhr.responseType = 'json';
-                xhr.onload = function() {
-                  if (this.status === 200) {
-                    tabToDiscussions[details.tabId] = xhr.response;
-                    return callback(null, article, xhr.response);
-                  } else {
-                    return callback('Unexpected return value');
-                  }
-                };
-                xhr.send(null);
-              }
-            }
-          },
-        ],
-        function(err, article, discussions) {
-          // send a response if so required
-          if (responseSender[details.tabId]) {
-            responseSender[details.tabId]({
-              article: article,
-              discussions: discussions
-            });
-            responseSender[details.tabId] = null;
-          }
-        });
+              var xhr = new XMLHttpRequest();
+              xhr.open(
+                'GET',
+                config.apiUrl + '/articles/sources?handle=' + details.url,
+                true
+              );
+              xhr.responseType = 'json';
+              xhr.onload = function() {
+                if (this.status === 200) {
+                  return callback(null, details.tabId, this.response);
+                } else {
+                  return callback('Unexpected return value');
+                }
+              };
+              xhr.send(null);
+            },
+            fetchDiscussions
+          ],
+          handleResponses
+        );
       }
     },
     {
@@ -188,7 +194,7 @@
                 // server.
                 chrome.pageAction.show(details.tabId);
                 setColorIcon(details.tabId);
-                return callback(null, xhr.response);
+                return callback(null, details.tabId, xhr.response);
               } else if (this.status === 404) {
                 return callback('PDF not found on PaperHive');
               } else {
@@ -197,36 +203,9 @@
             };
             xhr.send(null);
           },
-          function fetchDiscussions(article, callback) {
-            var xhr = new XMLHttpRequest();
-            xhr.open(
-              'GET',
-              config.apiUrl + '/articles/' + article._id + '/discussions/',
-              true
-            );
-            xhr.responseType = 'json';
-            xhr.onload = function() {
-              if (this.status === 200) {
-                tabToDiscussions[details.tabId] = xhr.response;
-                return callback(null, article, xhr.response);
-              } else {
-                return callback('Unexpected return value');
-              }
-            };
-            xhr.send(null);
-          }
+          fetchDiscussions
         ],
-        function(err, article, discussions) {
-          // make the loading as complete
-          // send a response if so required
-          if (responseSender[details.tabId]) {
-            responseSender[details.tabId]({
-              article: article,
-              discussions: discussions
-            });
-            responseSender[details.tabId] = null;
-          }
-        }
+        handleResponses
         );
       }
     },
@@ -262,5 +241,13 @@
           return true;
         }
       }
-    });
+    }
+  );
+    if (responseSender[tabId]) {
+      responseSender[tabId]({
+        article: article,
+        discussions: discussions
+      });
+      responseSender[tabId] = null;
+    }
 })();
