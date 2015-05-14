@@ -45,7 +45,7 @@
       xhr.responseType = 'json';
       xhr.onload = function() {
         if (this.status === 200) {
-          return callback(null, tabId, article, xhr.response);
+          return callback(null, tabId, article, this.response);
         } else {
           return callback('Unexpected return value');
         }
@@ -175,7 +175,7 @@
                 xhr.responseType = 'json';
                 xhr.onload = function() {
                   if (this.status === 200) {
-                    return callback(null, details.tabId, xhr.response);
+                    return callback(null, details.tabId, this.response);
                   } else if (this.status === 404) {
                     return callback('PDF not found on PaperHive (404)');
                   } else {
