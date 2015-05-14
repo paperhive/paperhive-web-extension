@@ -81,13 +81,13 @@
     }
   };
 
-  // turns a hostname whitelist into a regexp list
-  var whitelistToRegexp = function(whitelist) {
-    var regexplist = [];
+  // https://developer.chrome.com/extensions/events#filtered
+  var whitelistToFilter = function(whitelist) {
+    var filterList = [];
     for (var i = 0; i < whitelist.length; i++) {
-      regexplist.push('*://' + whitelist[i] + '/*');
+      filterList.push({hostSuffix: whitelist[i]});
     }
-    return regexplist;
+    return filterList;
   };
 
   // reset tabData
@@ -130,7 +130,7 @@
       }
     },
     {
-      urls: whitelistToRegexp(config.whitelistedHostnames),
+      url: whitelistToFilter(config.whitelistedHostnames),
       types: ['main_frame']
     }
   );
