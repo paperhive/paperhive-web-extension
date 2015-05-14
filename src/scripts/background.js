@@ -211,19 +211,20 @@
         // request) or in the request.activeTabId (if popup.js sent the
         // request).
         var tabId = request.activeTabId || sender.tab.id;
-        if (!tabId) {
-          console.error('Could not find tab ID.');
-        }
-        if (tabData[tabId]) {
-          // send immediately since the tab is fully loaded
-          sendResponse(tabData[tabId]);
+        if (tabId) {
+          if (tabData[tabId]) {
+            // send immediately since the tab is fully loaded
+            sendResponse(tabData[tabId]);
+          } else {
+            // send later, cf.
+            // <http://stackoverflow.com/a/30020271/353337>
+            responseSender[tabId] = sendResponse;
+            // returning `true` to indicate that we intend to send later, cf.
+            // <https://developer.chrome.com/extensions/runtime#event-onMessage>
+            return true;
+          }
         } else {
-          // send later, cf.
-          // <http://stackoverflow.com/a/30020271/353337>
-          responseSender[tabId] = sendResponse;
-          // returning `true` to indicate that we intend to send later, cf.
-          // <https://developer.chrome.com/extensions/runtime#event-onMessage>
-          return true;
+          console.error('Could not find tab ID.');
         }
       }
     }
