@@ -9,19 +9,27 @@
   var async = require('async');
   var config = require('../../config.json');
 
-  var tabToData = {};
+  var tabData = {};
   var responseSender = {};
+
+  // reset tabData
+  chrome.tabs.onUpdated.addListener(
+    function(tabId) {
+      tabData[tabId] = undefined;
+    }
+  );
 
   var handleResponse = function(err, tabId, article, discussions) {
     if (err) {
       console.error(err);
     }
+    tabData[tabId] = {
+      article: article,
+      discussions: discussions
+    };
     // send a response if so required
     if (responseSender[tabId]) {
-      responseSender[tabId]({
-        article: article,
-        discussions: discussions
-      });
+      responseSender[tabId](tabData[tabId]);
       responseSender[tabId] = null;
     }
   };
@@ -38,7 +46,6 @@
       xhr.responseType = 'json';
       xhr.onload = function() {
         if (this.status === 200) {
-          tabToData[tabId].discussions = xhr.response;
           return callback(null, tabId, article, xhr.response);
         } else {
           return callback('Unexpected return value');
@@ -54,8 +61,7 @@
   // <http://stackoverflow.com/a/30004730/353337>.
   chrome.webNavigation.onCommitted.addListener(
     function(details) {
-      if (details.tabId >= 0) {
-        tabToData[details.tabId] = {};
+      if (!tabData[details.tabId]) {
         async.waterfall(
           [
             function getArticlebyUrl(callback) {
@@ -78,12 +84,10 @@
               xhr.responseType = 'json';
               xhr.onload = function() {
                 if (this.status === 200) {
-                  var article = this.response;
-                  tabToData[details.tabId].article = article;
                   // set icon
                   chrome.pageAction.show(details.tabId);
                   setColorIcon(details.tabId);
-                  return callback(null, details.tabId, article);
+                  return callback(null, details.tabId, this.response);
                 } else {
                   return callback('Unexpected return value');
                 }
@@ -124,16 +128,72 @@
     }
   };
 
-  chrome.webRequest.onHeadersReceived.addListener(
+  // Chrome 42 doesn't properly fire chrome.webRequest.onCompleted/main_frame
+  // when loading a PDF page. When it's served from cache, it does.
+  // See <https://code.google.com/p/chromium/issues/detail?id=481411>.
+  chrome.webRequest.onCompleted.addListener(
     function(details) {
-      if (!tabToData[details.tabId].article && details.tabId >= 0) {
-        var header = extractHeader(
-          details.responseHeaders,
-          'content-type'
-        );
-        // If the header is set, use its value. Otherwise, use undefined.
-        tabToData[details.tabId].mimetype =
-          header && header.value.split(';', 1)[0];
+      if (!tabData[details.tabId]) {
+        var header = extractHeader(details.responseHeaders, 'content-type');
+        var mimetype = header && header.value.split(';', 1)[0];
+        if (mimetype === 'application/pdf') {
+          async.waterfall(
+            [
+              function getPdfHash(callback) {
+                // Since we have no access to the PDF data, we have to
+                // fetch it again and hope it gets served from cache.
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', details.url, true);
+                xhr.responseType = 'blob';
+                xhr.onload = function() {
+                  if (this.status === 200) {
+                    // read the blob data, cf.
+                    // <http://www.html5rocks.com/en/tutorials/file/xhr2/>
+                    var a = new FileReader();
+                    a.readAsBinaryString(this.response);
+                    a.onloadend = function() {
+                      var hash = crypto.createHash('sha1');
+                      hash.update(a.result, 'binary');
+                      return callback(null, hash.digest('hex'));
+                    };
+                  } else {
+                    return callback('Could not fetch PDF.');
+                  }
+                };
+                xhr.send(null);
+              },
+              function checkBySha(hash, callback) {
+                var xhr = new XMLHttpRequest();
+                xhr.open(
+                  'GET',
+                  config.apiUrl + '/articles/bySha/' + hash,
+                  true
+                );
+                xhr.responseType = 'json';
+                xhr.onload = function() {
+                  if (this.status === 200) {
+                    // Set the icon to color.
+                    // This might have already been done above, we need to do it
+                    // here to account for PDFs which are in our system but the
+                    // host which serves it is not actually approved. This
+                    // happens, for example, if someone copies an arXiv article
+                    // to another server.
+                    chrome.pageAction.show(details.tabId);
+                    setColorIcon(details.tabId);
+                    return callback(null, details.tabId, xhr.response);
+                  } else if (this.status === 404) {
+                    return callback('PDF not found on PaperHive (404)');
+                  } else {
+                    return callback('Unexpected return value');
+                  }
+                };
+                xhr.send(null);
+              },
+              fetchDiscussions
+            ],
+            handleResponse
+          );
+        }
       }
     },
     {
@@ -141,76 +201,6 @@
       types: ['main_frame']
     },
     ['responseHeaders']
-  );
-
-  // Chrome 42 doesn't properly fire chrome.webRequest.onCompleted/main_frame
-  // when loading a PDF page. When it's served from cache, it does.
-  // See <https://code.google.com/p/chromium/issues/detail?id=481411>.
-  chrome.webRequest.onCompleted.addListener(
-    function(details) {
-      if (!tabToData[details.tabId].article &&
-          tabToData[details.tabId].mimetype === 'application/pdf'
-         ) {
-        tabToData[details.tabId].discussions = null;
-
-        async.waterfall([
-          function getPdfHash(callback) {
-            // Since we have no access to the PDF data, we have to
-            // fetch it again and hope it gets served from cache.
-            var xhr = new XMLHttpRequest();
-            xhr.open('GET', details.url, true);
-            xhr.responseType = 'blob';
-            xhr.onload = function() {
-              if (this.status === 200) {
-                // read the blob data, cf.
-                // <http://www.html5rocks.com/en/tutorials/file/xhr2/>
-                var a = new FileReader();
-                a.readAsBinaryString(this.response);
-                a.onloadend = function() {
-                  var hash = crypto.createHash('sha1');
-                  hash.update(a.result, 'binary');
-                  return callback(null, hash.digest('hex'));
-                };
-              } else {
-                return callback('Could not fetch PDF.');
-              }
-            };
-            xhr.send(null);
-          },
-          function checkBySha(hash, callback) {
-            var xhr = new XMLHttpRequest();
-            xhr.open('GET', config.apiUrl + '/articles/bySha/' + hash, true);
-            xhr.responseType = 'json';
-            xhr.onload = function() {
-              if (this.status === 200) {
-                tabToData[details.tabId].article = xhr.response;
-                // Set the icon to color.
-                // This might have already been done above, we need to do it
-                // here to account for PDFs which are in our system but the
-                // host which serves it is not actually approved. This happens,
-                // for example, if someone copies an arXiv article to another
-                // server.
-                chrome.pageAction.show(details.tabId);
-                setColorIcon(details.tabId);
-                return callback(null, details.tabId, xhr.response);
-              } else if (this.status === 404) {
-                return callback('PDF not found on PaperHive');
-              } else {
-                return callback('Unexpected return value');
-              }
-            };
-            xhr.send(null);
-          },
-          fetchDiscussions
-        ],
-        handleResponse
-        );
-      }
-    },
-    {
-      urls: ['*://*/*.pdf'],
-      types: ['main_frame']
-    }
   );
 
   // add listener for content script communication
@@ -224,9 +214,9 @@
         if (!tabId) {
           console.error('Could not find tab ID.');
         }
-        if (tabToData[tabId].article) {
+        if (tabData[tabId]) {
           // send immediately since the tab is fully loaded
-          sendResponse(tabToData[tabId]);
+          sendResponse(tabData[tabId]);
         } else {
           // send later, cf.
           // <http://stackoverflow.com/a/30020271/353337>
