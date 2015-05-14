@@ -23,10 +23,16 @@
     if (err) {
       console.error(err);
     }
+    // set data
     tabData[tabId] = {
       article: article,
       discussions: discussions
     };
+    // set icon
+    if (article) {
+      chrome.pageAction.show(tabId);
+      setColorIcon(tabId);
+    }
     // send a response if so required
     if (responseSender[tabId]) {
       responseSender[tabId](tabData[tabId]);
@@ -84,9 +90,6 @@
               xhr.responseType = 'json';
               xhr.onload = function() {
                 if (this.status === 200) {
-                  // set icon
-                  chrome.pageAction.show(details.tabId);
-                  setColorIcon(details.tabId);
                   return callback(null, details.tabId, this.response);
                 } else {
                   return callback('Unexpected return value');
@@ -172,14 +175,6 @@
                 xhr.responseType = 'json';
                 xhr.onload = function() {
                   if (this.status === 200) {
-                    // Set the icon to color.
-                    // This might have already been done above, we need to do it
-                    // here to account for PDFs which are in our system but the
-                    // host which serves it is not actually approved. This
-                    // happens, for example, if someone copies an arXiv article
-                    // to another server.
-                    chrome.pageAction.show(details.tabId);
-                    setColorIcon(details.tabId);
                     return callback(null, details.tabId, xhr.response);
                   } else if (this.status === 404) {
                     return callback('PDF not found on PaperHive (404)');
