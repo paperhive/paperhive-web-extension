@@ -34,7 +34,10 @@
   };
 
   var fetchDiscussions = function(tabId, article, callback) {
-    if (tabId && article && article._id) {
+    if (!tabId) {
+      return callback('Invalid tabId');
+    }
+    if (article && article._id) {
       // fetch discussions
       var xhr = new XMLHttpRequest();
       xhr.open(
@@ -51,6 +54,8 @@
         }
       };
       xhr.send(null);
+    } else {
+      return callback(null, tabId, article);
     }
   };
 
