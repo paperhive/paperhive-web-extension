@@ -9,7 +9,8 @@
   var async = require('async');
   var config = require('../../config.json');
 
-  var tabData = {};
+  var articleData = {};
+  var pageUrls = {};
   var responseSender = {};
 
   var handleResponse = function(err, tabId, article, discussions) {
@@ -17,7 +18,7 @@
       console.error(err);
     }
     // set data
-    tabData[tabId] = {
+    articleData[tabId] = {
       article: article,
       discussions: discussions
     };
@@ -28,7 +29,7 @@
     }
     // send a response if so required
     if (responseSender[tabId]) {
-      responseSender[tabId](tabData[tabId]);
+      responseSender[tabId](articleData[tabId]);
       responseSender[tabId] = null;
     }
   };
@@ -90,10 +91,11 @@
     return filterList;
   };
 
-  // reset tabData
+  // reset articleData
   chrome.tabs.onUpdated.addListener(
     function(tabId) {
-      tabData[tabId] = undefined;
+      articleData[tabId] = undefined;
+      pageUrls[tabId] = [];
     }
   );
 
@@ -103,7 +105,7 @@
   // <http://stackoverflow.com/a/30004730/353337>.
   chrome.webNavigation.onCommitted.addListener(
     function(details) {
-      if (!tabData[details.tabId]) {
+      if (!articleData[details.tabId]) {
         async.waterfall(
           [
             function getArticlebyUrl(callback) {
@@ -140,7 +142,7 @@
   // See <https://code.google.com/p/chromium/issues/detail?id=481411>.
   chrome.webRequest.onCompleted.addListener(
     function(details) {
-      if (!tabData[details.tabId]) {
+      if (!articleData[details.tabId]) {
         var header = extractHeader(details.responseHeaders, 'content-type');
         var mimetype = header && header.value.split(';', 1)[0];
         if (mimetype === 'application/pdf') {
@@ -192,11 +194,13 @@
             ],
             handleResponse
           );
+        } else if (mimetype === 'text/html') {
+          // check content for hrefs that match the whitelist
         }
       }
     },
     {
-      urls: ['*://*/*.pdf'],
+      urls: ['*://*/*'],
       types: ['main_frame']
     },
     ['responseHeaders']
@@ -205,15 +209,15 @@
   // add listener for content script communication
   chrome.runtime.onMessage.addListener(
     function(request, sender, sendResponse) {
-      if (request.getInfo) {
-        // The tab ID is either in the sender (if a content script sent the
-        // request) or in the request.activeTabId (if popup.js sent the
-        // request).
-        var tabId = request.activeTabId || sender.tab.id;
-        if (tabId) {
-          if (tabData[tabId]) {
+      var tabId = request.activeTabId || sender.tab.id;
+      if (tabId) {
+        if (request.getArticleData) {
+          // The tab ID is either in the sender (if a content script sent the
+          // request) or in the request.activeTabId (if popup.js sent the
+          // request).
+          if (articleData[tabId]) {
             // send immediately since the tab is fully loaded
-            sendResponse(tabData[tabId]);
+            sendResponse(articleData[tabId]);
           } else {
             // send later, cf.
             // <http://stackoverflow.com/a/30020271/353337>
@@ -222,9 +226,14 @@
             // <https://developer.chrome.com/extensions/runtime#event-onMessage>
             return true;
           }
-        } else {
-          console.error('Could not find tab ID.');
         }
+
+        if (request.pageUrls) {
+          console.log(request.pageUrls);
+          pageUrls[tabId] = request.pageUrls;
+        }
+      } else {
+        console.error('Could not find tab ID.');
       }
     }
   );

@@ -11,7 +11,7 @@
 
   chrome.runtime.sendMessage(
     {
-      getInfo: true
+      getArticleData: true
     },
     function(response) {
       if (response.article && response.discussions) {
