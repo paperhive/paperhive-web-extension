@@ -12,7 +12,10 @@
   var tabToData = {};
   var responseSender = {};
 
-  var handleResponses = function(err, tabId, article, discussions) {
+  var handleResponse = function(err, tabId, article, discussions) {
+    if (err) {
+      console.error(err);
+    }
     // send a response if so required
     if (responseSender[tabId]) {
       responseSender[tabId]({
@@ -89,7 +92,7 @@
             },
             fetchDiscussions
           ],
-          handleResponses
+          handleResponse
         );
       }
     },
@@ -200,7 +203,7 @@
           },
           fetchDiscussions
         ],
-        handleResponses
+        handleResponse
         );
       }
     },
