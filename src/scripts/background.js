@@ -9,9 +9,7 @@
   var async = require('async');
   var config = require('../../config.json');
 
-  var tabToArticle = {};
-  var tabToDiscussions = {};
-  var tabToMimeType = {};
+  var tabToData = {};
   var responseSender = {};
 
   var handleResponses = function(err, tabId, article, discussions) {
@@ -26,31 +24,24 @@
   };
 
   var fetchDiscussions = function(tabId, article, callback) {
-    if (article) {
-      tabToArticle[tabId] = article;
-      // set icon
-      chrome.pageAction.show(tabId);
-      setColorIcon(tabId);
-
-      if (article._id) {
-        // fetch discussions
-        var xhr = new XMLHttpRequest();
-        xhr.open(
-          'GET',
-          config.apiUrl + '/articles/' + article._id + '/discussions/',
-          true
-        );
-        xhr.responseType = 'json';
-        xhr.onload = function() {
-          if (this.status === 200) {
-            tabToDiscussions[tabId] = xhr.response;
-            return callback(null, tabId, article, xhr.response);
-          } else {
-            return callback('Unexpected return value');
-          }
-        };
-        xhr.send(null);
-      }
+    if (tabId && article && article._id) {
+      // fetch discussions
+      var xhr = new XMLHttpRequest();
+      xhr.open(
+        'GET',
+        config.apiUrl + '/articles/' + article._id + '/discussions/',
+        true
+      );
+      xhr.responseType = 'json';
+      xhr.onload = function() {
+        if (this.status === 200) {
+          tabToData[tabId].discussions = xhr.response;
+          return callback(null, tabId, article, xhr.response);
+        } else {
+          return callback('Unexpected return value');
+        }
+      };
+      xhr.send(null);
     }
   };
 
@@ -61,11 +52,10 @@
   chrome.webNavigation.onCommitted.addListener(
     function(details) {
       if (details.tabId >= 0) {
-        tabToArticle[details.tabId] = undefined;
-        tabToDiscussions[details.tabId] = undefined;
+        tabToData[details.tabId] = {};
         async.waterfall(
           [
-            function checkOnPaperHive(callback) {
+            function getArticlebyUrl(callback) {
               // We could actually check on every single page, but we don't want
               // to put the PaperHive backend under too much load. Hence, filter
               // by hostname.
@@ -85,7 +75,12 @@
               xhr.responseType = 'json';
               xhr.onload = function() {
                 if (this.status === 200) {
-                  return callback(null, details.tabId, this.response);
+                  var article = this.response;
+                  tabToData[details.tabId].article = article;
+                  // set icon
+                  chrome.pageAction.show(details.tabId);
+                  setColorIcon(details.tabId);
+                  return callback(null, details.tabId, article);
                 } else {
                   return callback('Unexpected return value');
                 }
@@ -128,13 +123,13 @@
 
   chrome.webRequest.onHeadersReceived.addListener(
     function(details) {
-      if (!tabToArticle[details.tabId] && details.tabId >= 0) {
+      if (!tabToData[details.tabId].article && details.tabId >= 0) {
         var header = extractHeader(
           details.responseHeaders,
           'content-type'
         );
         // If the header is set, use its value. Otherwise, use undefined.
-        tabToMimeType[details.tabId] =
+        tabToData[details.tabId].mimetype =
           header && header.value.split(';', 1)[0];
       }
     },
@@ -150,10 +145,10 @@
   // See <https://code.google.com/p/chromium/issues/detail?id=481411>.
   chrome.webRequest.onCompleted.addListener(
     function(details) {
-      if (!tabToArticle[details.tabId] &&
-          tabToMimeType[details.tabId] === 'application/pdf'
+      if (!tabToData[details.tabId].article &&
+          tabToData[details.tabId].mimetype === 'application/pdf'
          ) {
-        tabToDiscussions[details.tabId] = null;
+        tabToData[details.tabId].discussions = null;
 
         async.waterfall([
           function getPdfHash(callback) {
@@ -185,7 +180,7 @@
             xhr.responseType = 'json';
             xhr.onload = function() {
               if (this.status === 200) {
-                tabToArticle[details.tabId] = xhr.response;
+                tabToData[details.tabId].article = xhr.response;
                 // Set the icon to color.
                 // This might have already been done above, we need to do it
                 // here to account for PDFs which are in our system but the
@@ -226,12 +221,9 @@
         if (!tabId) {
           console.error('Could not find tab ID.');
         }
-        if (tabToArticle[tabId]) {
+        if (tabToData[tabId].article) {
           // send immediately since the tab is fully loaded
-          sendResponse({
-            article: tabToArticle[tabId],
-            discussions: tabToDiscussions[tabId]
-          });
+          sendResponse(tabToData[tabId]);
         } else {
           // send later, cf.
           // <http://stackoverflow.com/a/30020271/353337>
@@ -243,11 +235,4 @@
       }
     }
   );
-    if (responseSender[tabId]) {
-      responseSender[tabId]({
-        article: article,
-        discussions: discussions
-      });
-      responseSender[tabId] = null;
-    }
 })();
