@@ -7,9 +7,10 @@
     "url": "git@github.com:paperhive/paperhive-chrome-extension.git"
   },
   "dependencies": {
+    "paperhive-sources": "0.0.2"
   },
   "devDependencies": {
-    "browserify": "^10.1.3",
+    "browserify": "^10.2.0",
     "browserify-shim": "^3.8.6",
     "del": "^1.1.1",
     "gulp": "^3.8.11",
