@@ -7,6 +7,7 @@
 (function() {
   var crypto = require('crypto');
   var async = require('async');
+  var sources = require('paperhive-sources');
   var config = require('../../config.json');
 
   var articleData = {};
@@ -91,6 +92,26 @@
     return filterList;
   };
 
+  var getArticlebyUrl = function(tabId, url) {
+    return function(callback) {
+      var xhr = new XMLHttpRequest();
+      xhr.open(
+        'GET',
+        config.apiUrl + '/articles/sources?handle=' + url,
+        true
+      );
+      xhr.responseType = 'json';
+      xhr.onload = function() {
+        if (this.status === 200) {
+          return callback(null, tabId, this.response);
+        } else {
+          return callback(null, tabId, null);
+        }
+      };
+      xhr.send(null);
+    };
+  };
+
   // reset articleData
   chrome.tabs.onUpdated.addListener(
     function(tabId) {
@@ -108,23 +129,7 @@
       if (!articleData[details.tabId]) {
         async.waterfall(
           [
-            function getArticlebyUrl(callback) {
-              var xhr = new XMLHttpRequest();
-              xhr.open(
-                'GET',
-                config.apiUrl + '/articles/sources?handle=' + details.url,
-                true
-              );
-              xhr.responseType = 'json';
-              xhr.onload = function() {
-                if (this.status === 200) {
-                  return callback(null, details.tabId, this.response);
-                } else {
-                  return callback(null, details.tabId, null);
-                }
-              };
-              xhr.send(null);
-            },
+            getArticlebyUrl(details.tabId, details.url),
             fetchDiscussions
           ],
           handleResponse
@@ -132,7 +137,7 @@
       }
     },
     {
-      url: whitelistToFilter(config.whitelistedHostnames),
+      url: whitelistToFilter(sources.hostnames),
       types: ['main_frame']
     }
   );
@@ -228,9 +233,16 @@
           }
         }
 
+        if (request.askAboutPageUrls) {
+          sendResponse({needPageUrls: !articleData[tabId]});
+        }
+
         if (request.pageUrls) {
           console.log(request.pageUrls);
           pageUrls[tabId] = request.pageUrls;
+          for (var i = 0; i < pageUrls[tabId].length; i++) {
+            console.log(pageUrls[tabId][i]);
+          }
         }
       } else {
         console.error('Could not find tab ID.');

@@ -8,18 +8,26 @@
 (function() {
 
   var _ = require('lodash');
-  var config = require('../../config.json');
+  var sources = require('paperhive-sources');
+  //var config = require('../../config.json');
 
-  // discover whitelisted hrefs
-  var links = document.getElementsByTagName('a');
-  var matchingUrls = [];
-  for (var i = 0; i < links.length; ++i) {
-    if (config.whitelistedHostnames.indexOf(links[i].hostname) >= 0) {
-      matchingUrls.push(links[i].href);
+  // check if we need the URLs
+  chrome.runtime.sendMessage(
+    {askAboutPageUrls: true},
+    function(response) {
+      console.log(response);
+      if (response.needPageUrls) {
+        var links = document.getElementsByTagName('a');
+        var matchingUrls = [];
+        for (var i = 0; i < links.length; ++i) {
+          if (sources.parseUrconfig.whitelistedHostnam) {
+            matchingUrls.push(links[i].href);
+          }
+        }
+        // send the URLs to the background script
+        chrome.runtime.sendMessage({pageUrls: _.uniq(matchingUrls)});
+      }
     }
-  }
-
-  // send the URLs to the background script
-  chrome.runtime.sendMessage({pageUrls: _.uniq(matchingUrls)});
+  );
 
 })();
