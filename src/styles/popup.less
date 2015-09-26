@@ -1,4 +1,8 @@
 @import "../../bower_components/bootstrap/less/bootstrap.less";
+
+// override default bootstrap theme
+@import "bootstrap-variables.less";
+
 @import "../../bower_components/fontawesome/less/font-awesome.less";
 
 body {
@@ -7,9 +11,12 @@ body {
 }
 
 .ph-title-logo {
-  max-width:35px;
-  max-height:35px;
-  margin-top: -7px;
+  height:100%;
+}
+
+.navbar-brand {
+  padding-top:7px;
+  padding-bottom:7px;
 }
 
 .ph-footer {

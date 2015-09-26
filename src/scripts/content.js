@@ -11,7 +11,7 @@
 
   chrome.runtime.sendMessage(
     {
-      getInfo: true
+      getArticleData: true
     },
     function(response) {
       if (response.article && response.discussions) {
@@ -20,10 +20,11 @@
         var text;
         if (response.discussions.length === 1) {
           text =
-            'There is <strong>1</strong> open discussion for this document.';
+            'There is <strong>1</strong> open discussion ' +
+            'for this document on PaperHive.';
         } else if (response.discussions.length > 1) {
           text = 'There are <strong>' + response.discussions.length +
-            '</strong> open discussions for this document.';
+            '</strong> open discussions for this document on PaperHive.';
         }
         if (text) {
           //var content = document.createTextNode(text);

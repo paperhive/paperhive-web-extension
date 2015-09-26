@@ -24,7 +24,7 @@
         },
         function(tabs) {
           chrome.runtime.sendMessage(
-            {getInfo: true, activeTabId: tabs[0].id},
+            {getArticleData: true, activeTabId: tabs[0].id},
             function(response) {
               // for some reason, we need $apply here
               $scope.$apply(function() {

@@ -75,7 +75,8 @@ gulp.task('scripts', ['jshint', 'jscs'], function() {
   var background = js(false, 'background.js');
   var popup = js(false, 'popup.js');
   var content = js(false, 'content.js');
-  merge(background, popup, content);
+  var findUrls = js(false, 'findUrls.js');
+  merge(background, popup, content, findUrls);
 });
 
 var imageminOpts = {
@@ -95,11 +96,14 @@ gulp.task('static', function() {
   var fontawesome = gulp.src('bower_components/fontawesome/fonts/*')
   .pipe(gulp.dest('build/fonts'));
 
+  var roboto = gulp.src('bower_components/roboto-fontface/fonts/*')
+    .pipe(gulp.dest('build/assets/roboto/fonts'));
+
   var images = gulp.src('src/images/*')
   .pipe(debug ? gutil.noop() : imagemin(imageminOpts))
   .pipe(gulp.dest('build/images'));
 
-  return merge(locales, manifest, fontawesome, images);
+  return merge(locales, manifest, fontawesome, roboto, images);
 });
 
 gulp.task('jshint', function() {
