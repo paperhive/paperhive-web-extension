@@ -112,13 +112,15 @@
     };
   };
 
-  // reset articleData
-  chrome.tabs.onUpdated.addListener(
-    function(tabId) {
-      articleData[tabId] = undefined;
-      pageUrls[tabId] = [];
-    }
-  );
+  // The onUpdated listener is triggered when a tab completed loading. Fetching
+  // article sources and such all happens *before* that. Hence, do *not*
+  // override the articleData here.
+  //chrome.tabs.onUpdated.addListener(
+  //  function(tabId) {
+  //    articleData[tabId] = undefined;
+  //    pageUrls[tabId] = [];
+  //  }
+  //);
 
   // Use webNavigation here since we use page actions. To `show` a page action,
   // one needs to be sure that the omnibox isn't updated anymore. This state is
