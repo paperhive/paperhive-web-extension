@@ -1,6 +1,6 @@
 {
-  "name": "paperhive",
-  "version": "0.0.0",
+  "name": "paperhive-chrome-extension",
+  "version": "0.0.4",
   "license": "GPL-3.0",
   "description": "Chrome extension for PaperHive",
   "repository": {
