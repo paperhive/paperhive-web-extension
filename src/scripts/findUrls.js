@@ -15,12 +15,11 @@
   chrome.runtime.sendMessage(
     {askAboutPageUrls: true},
     function(response) {
-      console.log(response);
       if (response.needPageUrls) {
         var links = document.getElementsByTagName('a');
         var matchingUrls = [];
         for (var i = 0; i < links.length; ++i) {
-          if (sources.parseUrconfig.whitelistedHostnam) {
+          if (sources.hostnames) {
             matchingUrls.push(links[i].href);
           }
         }
