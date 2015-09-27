@@ -1,5 +1,10 @@
 @import "ph-variables.less";
 
+// include upstream font
+@import "../../bower_components/roboto-fontface/css/roboto-fontface.less";
+// set font path
+@roboto-font-path: 'assets/roboto/fonts/';
+
 /* Colors */
 @brand-primary: @ph-base-color; // lighten(@ph-highlight-color, 15%);
 
@@ -7,7 +12,7 @@
 @body-bg: @ph-background-color;
 
 /* Typography */
-@font-family-sans-serif: sans-serif;
+@font-family-sans-serif: Roboto, sans-serif;
 @blockquote-border-color: lighten(@ph-highlight-color, 50%);
 
 /* Iconography */
