@@ -55,7 +55,6 @@
     }
   };
 
-  var isColor = {};
   var setColorIcon = function(tabId) {
     chrome.pageAction.setIcon({
       path: {
@@ -64,7 +63,6 @@
       },
       tabId: tabId
     });
-    isColor[tabId] = true;
   };
 
   // from <http://stackoverflow.com/a/21042958/353337>
