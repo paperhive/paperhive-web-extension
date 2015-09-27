@@ -93,10 +93,10 @@ gulp.task('static', function() {
   var manifest = gulp.src('src/manifest.json')
   .pipe(gulp.dest('build'));
 
-  var fontawesome = gulp.src('bower_components/fontawesome/fonts/*')
+  var fontawesome = gulp.src('bower_components/fontawesome/fonts/*.woff2')
   .pipe(gulp.dest('build/fonts'));
 
-  var roboto = gulp.src('bower_components/roboto-fontface/fonts/*')
+  var roboto = gulp.src('bower_components/roboto-fontface/fonts/*.woff2')
     .pipe(gulp.dest('build/assets/roboto/fonts'));
 
   var images = gulp.src('src/images/*')
