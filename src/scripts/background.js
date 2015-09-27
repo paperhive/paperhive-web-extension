@@ -41,21 +41,15 @@
     }
     if (article && article._id) {
       // fetch discussions
-      var xhr = new XMLHttpRequest();
-      xhr.open(
-        'GET',
-        config.apiUrl + '/articles/' + article._id + '/discussions/',
-        true
-      );
-      xhr.responseType = 'json';
-      xhr.onload = function() {
-        if (this.status === 200) {
-          return callback(null, tabId, article, this.response);
-        } else {
-          return callback('Unexpected return value');
-        }
-      };
-      xhr.send(null);
+      var url = config.apiUrl + '/articles/' + article._id + '/discussions/';
+      fetch(url).then(function(response) {
+        return response.json();
+      }).then(function(data) {
+        return callback(null, tabId, article, data);
+      }).catch(function(err) {
+        console.error(err.message);
+        return callback('Unexpected error when fetching ' + url);
+      });
     } else {
       return callback(null, tabId, article);
     }
