@@ -81,23 +81,21 @@
     }
   };
 
-  var getArticlebyUrl = function(tabId, url) {
+  var getArticleByUrl = function(tabId, url) {
     return function(callback) {
-      var xhr = new XMLHttpRequest();
-      xhr.open(
-        'GET',
-        config.apiUrl + '/articles/sources?handle=' + url,
-        true
-      );
-      xhr.responseType = 'json';
-      xhr.onload = function() {
-        if (this.status === 200) {
-          return callback(null, tabId, this.response);
+      var fullUrl = config.apiUrl + '/articles/sources?handle=' + url;
+      fetch(fullUrl).then(function(response) {
+        if (response.ok) {
+          response.json().then(function(json) {
+            return callback(null, tabId, json);
+          });
         } else {
           return callback(null, tabId, null);
         }
-      };
-      xhr.send(null);
+      }).catch(function(err) {
+        console.error(err.message);
+        return callback('Unexpected error when fetching ' + fullUrl);
+      });
     };
   };
 
@@ -122,7 +120,7 @@
       // set article data
       async.waterfall(
         [
-          getArticlebyUrl(details.tabId, details.url),
+          getArticleByUrl(details.tabId, details.url),
           fetchDiscussions
         ],
         handleResponse
