@@ -18,6 +18,7 @@
     if (err) {
       console.error(err);
     }
+    console.log('handleResponse');
     // set data
     articleData[tabId] = {
       article: article,
@@ -227,17 +228,17 @@
           }
         }
 
-        if (request.askAboutPageUrls) {
-          sendResponse({needPageUrls: !articleData[tabId]});
-        }
+        //if (request.askAboutPageUrls) {
+        //  sendResponse({needPageUrls: !articleData[tabId]});
+        //}
 
-        if (request.pageUrls) {
-          console.log(request.pageUrls);
-          pageUrls[tabId] = request.pageUrls;
-          for (var i = 0; i < pageUrls[tabId].length; i++) {
-            console.log(pageUrls[tabId][i]);
-          }
-        }
+        //if (request.pageUrls) {
+        //  console.log(request.pageUrls);
+        //  pageUrls[tabId] = request.pageUrls;
+        //  for (var i = 0; i < pageUrls[tabId].length; i++) {
+        //    console.log(pageUrls[tabId][i]);
+        //  }
+        //}
       } else {
         console.error('Could not find tab ID.');
       }
