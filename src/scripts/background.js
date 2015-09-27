@@ -146,25 +146,25 @@
               function getPdfHash(callback) {
                 // Since we have no access to the PDF data, we have to
                 // fetch it again and hope it gets served from cache.
-                var xhr = new XMLHttpRequest();
-                xhr.open('GET', details.url, true);
-                xhr.responseType = 'blob';
-                xhr.onload = function() {
-                  if (this.status === 200) {
-                    // read the blob data, cf.
-                    // <http://www.html5rocks.com/en/tutorials/file/xhr2/>
-                    var a = new FileReader();
-                    a.readAsBinaryString(this.response);
-                    a.onloadend = function() {
-                      var hash = crypto.createHash('sha1');
-                      hash.update(a.result, 'binary');
-                      return callback(null, hash.digest('hex'));
-                    };
-                  } else {
-                    return callback('Could not fetch PDF.');
-                  }
-                };
-                xhr.send(null);
+                // TODO come up with something smarter here
+                fetch(details.url).then(function(response) {
+                  return response.blob();
+                }).then(function(data) {
+                  // read the blob data, cf.
+                  // <https://developer.mozilla.org/en/docs/Web/API/FileReader>
+                  var a = new FileReader();
+                  a.readAsBinaryString(data);
+                  a.onloadend = function() {
+                    var hash = crypto.createHash('sha1');
+                    hash.update(a.result, 'binary');
+                    return callback(null, hash.digest('hex'));
+                  };
+                }).catch(function(err) {
+                  console.error(err.message);
+                  return callback(
+                    'Unexpected error when fetching ' + details.url
+                  );
+                });
               },
               function checkBySha(hash, callback) {
                 var url = config.apiUrl + '/articles/bySha/' + hash;
