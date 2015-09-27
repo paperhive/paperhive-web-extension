@@ -7,8 +7,14 @@
 (function() {
   var crypto = require('crypto');
   var async = require('async');
-  var sources = require('paperhive-sources');
   var config = require('../../config.json');
+
+  var sources = require('paperhive-sources');
+  // https://developer.chrome.com/extensions/events#filtered
+  var urlFilter = [];
+  sources.hostnames.forEach(function(hostname) {
+    urlFilter.push({hostSuffix: hostname});
+  });
 
   var articleData = {};
   var pageUrls = {};
@@ -75,15 +81,6 @@
     }
   };
 
-  // https://developer.chrome.com/extensions/events#filtered
-  var whitelistToFilter = function(whitelist) {
-    var filterList = [];
-    for (var i = 0; i < whitelist.length; i++) {
-      filterList.push({hostSuffix: whitelist[i]});
-    }
-    return filterList;
-  };
-
   var getArticlebyUrl = function(tabId, url) {
     return function(callback) {
       var xhr = new XMLHttpRequest();
@@ -132,7 +129,7 @@
       );
     },
     {
-      url: whitelistToFilter(sources.hostnames),
+      url: urlFilter,
       types: ['main_frame']
     }
   );
