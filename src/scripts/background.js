@@ -18,7 +18,6 @@
     if (err) {
       console.error(err);
     }
-    console.log('handleResponse');
     // set data
     articleData[tabId] = {
       article: article,
@@ -105,31 +104,32 @@
     };
   };
 
-  // The onUpdated listener is triggered when a tab completed loading. Fetching
-  // article sources and such all happens *before* that. Hence, do *not*
-  // override the articleData here.
-  //chrome.tabs.onUpdated.addListener(
-  //  function(tabId) {
-  //    articleData[tabId] = undefined;
-  //    pageUrls[tabId] = [];
-  //  }
-  //);
+  // clean up after tab close
+  chrome.tabs.onRemoved.addListener(
+    function(tabId) {
+      articleData[tabId] = undefined;
+      pageUrls[tabId] = [];
+    }
+  );
 
   // Use webNavigation here since we use page actions. To `show` a page action,
   // one needs to be sure that the omnibox isn't updated anymore. This state is
   // not tracked by webRequest, see
   // <http://stackoverflow.com/a/30004730/353337>.
+  // Some experimentation has shown that
+  //   chrome.webNavigation.onBeforeNavigate.addListener()
+  // is still too early; the page action sometimes doesn't display correctly.
+  // Hence, use one event later (namely onCommitted).
   chrome.webNavigation.onCommitted.addListener(
     function(details) {
-      if (!articleData[details.tabId]) {
-        async.waterfall(
-          [
-            getArticlebyUrl(details.tabId, details.url),
-            fetchDiscussions
-          ],
-          handleResponse
-        );
-      }
+      // set article data
+      async.waterfall(
+        [
+          getArticlebyUrl(details.tabId, details.url),
+          fetchDiscussions
+        ],
+        handleResponse
+      );
     },
     {
       url: whitelistToFilter(sources.hostnames),
