@@ -7,8 +7,14 @@
 (function() {
   var crypto = require('crypto');
   var async = require('async');
-  var sources = require('paperhive-sources');
   var config = require('../../config.json');
+
+  var sources = require('paperhive-sources');
+  // https://developer.chrome.com/extensions/events#filtered
+  var urlFilter = [];
+  sources.hostnames.forEach(function(hostname) {
+    urlFilter.push({hostSuffix: hostname});
+  });
 
   var articleData = {};
   var pageUrls = {};
@@ -41,27 +47,20 @@
     }
     if (article && article._id) {
       // fetch discussions
-      var xhr = new XMLHttpRequest();
-      xhr.open(
-        'GET',
-        config.apiUrl + '/articles/' + article._id + '/discussions/',
-        true
-      );
-      xhr.responseType = 'json';
-      xhr.onload = function() {
-        if (this.status === 200) {
-          return callback(null, tabId, article, this.response);
-        } else {
-          return callback('Unexpected return value');
-        }
-      };
-      xhr.send(null);
+      var url = config.apiUrl + '/articles/' + article._id + '/discussions/';
+      fetch(url).then(function(response) {
+        return response.json();
+      }).then(function(data) {
+        return callback(null, tabId, article, data);
+      }).catch(function(err) {
+        console.error(err.message);
+        return callback('Unexpected error when fetching ' + url);
+      });
     } else {
       return callback(null, tabId, article);
     }
   };
 
-  var isColor = {};
   var setColorIcon = function(tabId) {
     chrome.pageAction.setIcon({
       path: {
@@ -70,7 +69,6 @@
       },
       tabId: tabId
     });
-    isColor[tabId] = true;
   };
 
   // from <http://stackoverflow.com/a/21042958/353337>
@@ -83,63 +81,53 @@
     }
   };
 
-  // https://developer.chrome.com/extensions/events#filtered
-  var whitelistToFilter = function(whitelist) {
-    var filterList = [];
-    for (var i = 0; i < whitelist.length; i++) {
-      filterList.push({hostSuffix: whitelist[i]});
-    }
-    return filterList;
-  };
-
-  var getArticlebyUrl = function(tabId, url) {
+  var getArticleByUrl = function(tabId, url) {
     return function(callback) {
-      var xhr = new XMLHttpRequest();
-      xhr.open(
-        'GET',
-        config.apiUrl + '/articles/sources?handle=' + url,
-        true
-      );
-      xhr.responseType = 'json';
-      xhr.onload = function() {
-        if (this.status === 200) {
-          return callback(null, tabId, this.response);
+      var fullUrl = config.apiUrl + '/articles/sources?handle=' + url;
+      fetch(fullUrl).then(function(response) {
+        if (response.ok) {
+          response.json().then(function(json) {
+            return callback(null, tabId, json);
+          });
         } else {
           return callback(null, tabId, null);
         }
-      };
-      xhr.send(null);
+      }).catch(function(err) {
+        console.error(err.message);
+        return callback('Unexpected error when fetching ' + fullUrl);
+      });
     };
   };
 
-  // The onUpdated listener is triggered when a tab completed loading. Fetching
-  // article sources and such all happens *before* that. Hence, do *not*
-  // override the articleData here.
-  //chrome.tabs.onUpdated.addListener(
-  //  function(tabId) {
-  //    articleData[tabId] = undefined;
-  //    pageUrls[tabId] = [];
-  //  }
-  //);
+  // clean up after tab close
+  chrome.tabs.onRemoved.addListener(
+    function(tabId) {
+      articleData[tabId] = undefined;
+      pageUrls[tabId] = [];
+    }
+  );
 
   // Use webNavigation here since we use page actions. To `show` a page action,
   // one needs to be sure that the omnibox isn't updated anymore. This state is
   // not tracked by webRequest, see
   // <http://stackoverflow.com/a/30004730/353337>.
+  // Some experimentation has shown that
+  //   chrome.webNavigation.onBeforeNavigate.addListener()
+  // is still too early; the page action sometimes doesn't display correctly.
+  // Hence, use one event later (namely onCommitted).
   chrome.webNavigation.onCommitted.addListener(
     function(details) {
-      if (!articleData[details.tabId]) {
-        async.waterfall(
-          [
-            getArticlebyUrl(details.tabId, details.url),
-            fetchDiscussions
-          ],
-          handleResponse
-        );
-      }
+      // set article data
+      async.waterfall(
+        [
+          getArticleByUrl(details.tabId, details.url),
+          fetchDiscussions
+        ],
+        handleResponse
+      );
     },
     {
-      url: whitelistToFilter(sources.hostnames),
+      url: urlFilter,
       types: ['main_frame']
     }
   );
@@ -158,44 +146,42 @@
               function getPdfHash(callback) {
                 // Since we have no access to the PDF data, we have to
                 // fetch it again and hope it gets served from cache.
-                var xhr = new XMLHttpRequest();
-                xhr.open('GET', details.url, true);
-                xhr.responseType = 'blob';
-                xhr.onload = function() {
-                  if (this.status === 200) {
-                    // read the blob data, cf.
-                    // <http://www.html5rocks.com/en/tutorials/file/xhr2/>
-                    var a = new FileReader();
-                    a.readAsBinaryString(this.response);
-                    a.onloadend = function() {
-                      var hash = crypto.createHash('sha1');
-                      hash.update(a.result, 'binary');
-                      return callback(null, hash.digest('hex'));
-                    };
-                  } else {
-                    return callback('Could not fetch PDF.');
-                  }
-                };
-                xhr.send(null);
+                // TODO come up with something smarter here
+                fetch(details.url).then(function(response) {
+                  return response.blob();
+                }).then(function(data) {
+                  // read the blob data, cf.
+                  // <https://developer.mozilla.org/en/docs/Web/API/FileReader>
+                  var a = new FileReader();
+                  a.readAsBinaryString(data);
+                  a.onloadend = function() {
+                    var hash = crypto.createHash('sha1');
+                    hash.update(a.result, 'binary');
+                    return callback(null, hash.digest('hex'));
+                  };
+                }).catch(function(err) {
+                  console.error(err.message);
+                  return callback(
+                    'Unexpected error when fetching ' + details.url
+                  );
+                });
               },
               function checkBySha(hash, callback) {
-                var xhr = new XMLHttpRequest();
-                xhr.open(
-                  'GET',
-                  config.apiUrl + '/articles/bySha/' + hash,
-                  true
-                );
-                xhr.responseType = 'json';
-                xhr.onload = function() {
-                  if (this.status === 200) {
-                    return callback(null, details.tabId, this.response);
-                  } else if (this.status === 404) {
+                var url = config.apiUrl + '/articles/bySha/' + hash;
+                fetch(url).then(function(response) {
+                  if (response.status === 200) {
+                    response.json().then(function(json) {
+                      return callback(null, details.tabId, json);
+                    });
+                  } else if (response.status === 404) {
                     return callback('PDF not found on PaperHive (404)');
                   } else {
                     return callback('Unexpected return value');
                   }
-                };
-                xhr.send(null);
+                }).catch(function(err) {
+                  console.error(err.message);
+                  return callback('Unexpected error when fetching ' + url);
+                });
               },
               fetchDiscussions
             ],
@@ -235,17 +221,17 @@
           }
         }
 
-        if (request.askAboutPageUrls) {
-          sendResponse({needPageUrls: !articleData[tabId]});
-        }
+        //if (request.askAboutPageUrls) {
+        //  sendResponse({needPageUrls: !articleData[tabId]});
+        //}
 
-        if (request.pageUrls) {
-          console.log(request.pageUrls);
-          pageUrls[tabId] = request.pageUrls;
-          for (var i = 0; i < pageUrls[tabId].length; i++) {
-            console.log(pageUrls[tabId][i]);
-          }
-        }
+        //if (request.pageUrls) {
+        //  console.log(request.pageUrls);
+        //  pageUrls[tabId] = request.pageUrls;
+        //  for (var i = 0; i < pageUrls[tabId].length; i++) {
+        //    console.log(pageUrls[tabId][i]);
+        //  }
+        //}
       } else {
         console.error('Could not find tab ID.');
       }
