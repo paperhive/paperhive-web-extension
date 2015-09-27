@@ -167,23 +167,21 @@
                 xhr.send(null);
               },
               function checkBySha(hash, callback) {
-                var xhr = new XMLHttpRequest();
-                xhr.open(
-                  'GET',
-                  config.apiUrl + '/articles/bySha/' + hash,
-                  true
-                );
-                xhr.responseType = 'json';
-                xhr.onload = function() {
-                  if (this.status === 200) {
-                    return callback(null, details.tabId, this.response);
-                  } else if (this.status === 404) {
+                var url = config.apiUrl + '/articles/bySha/' + hash;
+                fetch(url).then(function(response) {
+                  if (response.status === 200) {
+                    response.json().then(function(json) {
+                      return callback(null, details.tabId, json);
+                    });
+                  } else if (response.status === 404) {
                     return callback('PDF not found on PaperHive (404)');
                   } else {
                     return callback('Unexpected return value');
                   }
-                };
-                xhr.send(null);
+                }).catch(function(err) {
+                  console.error(err.message);
+                  return callback('Unexpected error when fetching ' + url);
+                });
               },
               fetchDiscussions
             ],
