@@ -55,6 +55,24 @@
     };
   };
 
+  var fetchArticle = function(url) {
+    return function(callback) {
+      var fullUrl = config.apiUrl + '/articles/sources?handle=' + url;
+      fetch(fullUrl).then(function(response) {
+        if (response.ok) {
+          response.json().then(function(json) {
+            return callback(null, json);
+          });
+        } else {
+          return callback(null, null);
+        }
+      }).catch(function(err) {
+        console.error(err.message);
+        return callback('Unexpected error when fetching ' + fullUrl);
+      });
+    };
+  };
+
   var fetchDiscussions = function(article, callback) {
     if (article && article._id) {
       // fetch discussions
@@ -92,24 +110,6 @@
     }
   };
 
-  var getArticleByUrl = function(url) {
-    return function(callback) {
-      var fullUrl = config.apiUrl + '/articles/sources?handle=' + url;
-      fetch(fullUrl).then(function(response) {
-        if (response.ok) {
-          response.json().then(function(json) {
-            return callback(null, json);
-          });
-        } else {
-          return callback(null, null);
-        }
-      }).catch(function(err) {
-        console.error(err.message);
-        return callback('Unexpected error when fetching ' + fullUrl);
-      });
-    };
-  };
-
   // clean up after tab close
   chrome.tabs.onRemoved.addListener(
     function(tabId) {
@@ -125,7 +125,7 @@
       // set article data
       async.waterfall(
         [
-          getArticleByUrl(details.url),
+          fetchArticle(details.url),
           fetchDiscussions
         ],
         handleResponse(details.tabId)
