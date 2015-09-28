@@ -20,56 +20,55 @@
   var pageUrls = {};
   var responseSender = {};
 
-  var handleResponse = function(err, tabId, article, discussions) {
-    if (err) {
-      console.error(err);
-    }
-    // set data
-    articleData[tabId] = {
-      article: article,
-      discussions: discussions
-    };
-    // set icon
-    if (article) {
-      setColorIcon(tabId);
-      if (discussions && discussions.length > 0) {
-        //chrome.browserAction.setBadgeBackgroundColor([255, 0, 0, 255]);
-        var badge;
-        if (discussions.length < 1000) {
-          badge = discussions.length.toString();
-        } else {
-          badge = '999+';
-        }
-        chrome.browserAction.setBadgeText({
-          text: badge,
-          tabId: tabId
-        });
+  var handleResponse = function(tabId) {
+    return function(err, article, discussions) {
+      if (err) {
+        console.error(err);
       }
-    }
-    // send a response if so required
-    if (responseSender[tabId]) {
-      responseSender[tabId](articleData[tabId]);
-      responseSender[tabId] = null;
-    }
+      // set data
+      articleData[tabId] = {
+        article: article,
+        discussions: discussions
+      };
+      // set icon
+      if (article) {
+        setColorIcon(tabId);
+        if (discussions && discussions.length > 0) {
+          //chrome.browserAction.setBadgeBackgroundColor([255, 0, 0, 255]);
+          var badge;
+          if (discussions.length < 1000) {
+            badge = discussions.length.toString();
+          } else {
+            badge = '999+';
+          }
+          chrome.browserAction.setBadgeText({
+            text: badge,
+            tabId: tabId
+          });
+        }
+      }
+      // send a response if so required
+      if (responseSender[tabId]) {
+        responseSender[tabId](articleData[tabId]);
+        responseSender[tabId] = null;
+      }
+    };
   };
 
-  var fetchDiscussions = function(tabId, article, callback) {
-    if (!tabId) {
-      return callback('Invalid tabId');
-    }
+  var fetchDiscussions = function(article, callback) {
     if (article && article._id) {
       // fetch discussions
       var url = config.apiUrl + '/articles/' + article._id + '/discussions/';
       fetch(url).then(function(response) {
         return response.json();
       }).then(function(data) {
-        return callback(null, tabId, article, data);
+        return callback(null, article, data);
       }).catch(function(err) {
         console.error(err.message);
         return callback('Unexpected error when fetching ' + url);
       });
     } else {
-      return callback(null, tabId, article);
+      return callback(null, article);
     }
   };
 
@@ -93,16 +92,16 @@
     }
   };
 
-  var getArticleByUrl = function(tabId, url) {
+  var getArticleByUrl = function(url) {
     return function(callback) {
       var fullUrl = config.apiUrl + '/articles/sources?handle=' + url;
       fetch(fullUrl).then(function(response) {
         if (response.ok) {
           response.json().then(function(json) {
-            return callback(null, tabId, json);
+            return callback(null, json);
           });
         } else {
-          return callback(null, tabId, null);
+          return callback(null, null);
         }
       }).catch(function(err) {
         console.error(err.message);
@@ -119,23 +118,17 @@
     }
   );
 
-  // Use webNavigation here since we use page actions. To `show` a page action,
-  // one needs to be sure that the omnibox isn't updated anymore. This state is
-  // not tracked by webRequest, see
-  // <http://stackoverflow.com/a/30004730/353337>.
-  // Some experimentation has shown that
-  //   chrome.webNavigation.onBeforeNavigate.addListener()
-  // is still too early; the page action sometimes doesn't display correctly.
-  // Hence, use one event later (namely onCommitted).
-  chrome.webNavigation.onCommitted.addListener(
+  //chrome.webRequest.onBeforeRequest.addListener(
+  chrome.webNavigation.onBeforeNavigate.addListener(
     function(details) {
+      console.log('webNavigation.onBeforeNavigate');
       // set article data
       async.waterfall(
         [
-          getArticleByUrl(details.tabId, details.url),
+          getArticleByUrl(details.url),
           fetchDiscussions
         ],
-        handleResponse
+        handleResponse(details.tabId)
       );
     },
     {
@@ -143,6 +136,11 @@
       types: ['main_frame']
     }
   );
+
+  chrome.webNavigation.onCommitted.addListener(
+    function() {
+      console.log('webNavigation.onCommitted');
+    });
 
   // Chrome 42 doesn't properly fire chrome.webRequest.onCompleted/main_frame
   // when loading a PDF page. When it's served from cache, it does.
@@ -197,7 +195,7 @@
               },
               fetchDiscussions
             ],
-            handleResponse
+            handleResponse(details.tabId)
           );
         } else if (mimetype === 'text/html') {
           // check content for hrefs that match the whitelist
