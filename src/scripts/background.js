@@ -31,8 +31,20 @@
     };
     // set icon
     if (article) {
-      chrome.pageAction.show(tabId);
       setColorIcon(tabId);
+      if (discussions) {
+        //chrome.browserAction.setBadgeBackgroundColor([255, 0, 0, 255]);
+        var badge;
+        if (discussions.length < 1000) {
+          badge = discussions.length.toString();
+        } else {
+          badge = '999+';
+        }
+        chrome.browserAction.setBadgeText({
+          text: badge,
+          tabId: tabId
+        });
+      }
     }
     // send a response if so required
     if (responseSender[tabId]) {
@@ -62,7 +74,7 @@
   };
 
   var setColorIcon = function(tabId) {
-    chrome.pageAction.setIcon({
+    chrome.browserAction.setIcon({
       path: {
         '19': 'images/icon-19.png',
         '38': 'images/icon-38.png'
