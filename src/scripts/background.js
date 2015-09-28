@@ -32,7 +32,7 @@
     // set icon
     if (article) {
       setColorIcon(tabId);
-      if (discussions) {
+      if (discussions && discussions.length > 0) {
         //chrome.browserAction.setBadgeBackgroundColor([255, 0, 0, 255]);
         var badge;
         if (discussions.length < 1000) {
