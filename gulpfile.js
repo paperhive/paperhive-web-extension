@@ -19,6 +19,7 @@ var less = require('gulp-less');
 var browserify = require('browserify');
 var shim = require('browserify-shim');
 var merge = require('merge-stream');
+var zip = require('gulp-zip');
 
 var debug = process.env.DEBUG || false;
 
@@ -56,13 +57,13 @@ function js(watch, file) {
     bundler = watchify(bundler);
   }
 
-  function rebundle () {
+  function rebundle() {
     return bundler.bundle()
       .on('error', handleError)
       .pipe(source(file))
       .pipe(buffer())
       .pipe(debug ? gutil.noop() : streamify(uglify({
-       preserveComments: 'some'
+        preserveComments: 'some'
       })))
       .pipe(gulp.dest('build/scripts/'));
   }
@@ -166,6 +167,16 @@ gulp.task('clean', function(cb) {
 });
 
 gulp.task(
-  'default',
-  ['html', 'styles', 'static', 'scripts']
+  'zip',
+  ['html', 'styles', 'static', 'scripts'],
+  function() {
+    // zip it all up
+    var files = 'build/**';
+    var zipName = 'paperhive.zip';
+    gulp.src(files)
+    .pipe(zip(zipName))
+    .pipe(gulp.dest('.'));
+  }
 );
+
+gulp.task('default', ['zip']);
