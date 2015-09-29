@@ -27,6 +27,9 @@
           setColorIcon(tabId);
           response.json().then(function(json) {
             // set tab data for communication with the popup script
+            if (!(tabId in articleData)) {
+              articleData[tabId] = {};
+            }
             articleData[tabId].article = json;
             return callback(null, json);
           });
@@ -108,17 +111,20 @@
     }
   };
 
-  // create data item
-  chrome.tabs.onCreated.addListener(
-    function(tab) {
-      articleData[tab.id] = {};
-    }
-  );
+  //// create data item
+  //chrome.tabs.onCreated.addListener(
+  //  function(tab) {
+  //    console.log('tabs.onCreated ' + tab.id);
+  //    articleData[tab.id] = {};
+  //  }
+  //);
+
   // clean up after tab close
   chrome.tabs.onRemoved.addListener(
-    function(tab) {
-      articleData[tab.id] = undefined;
-      pageUrls[tab.id] = [];
+    function(tabId) {
+      console.log('tabs.onRemoved ' + tabId);
+      articleData[tabId] = undefined;
+      pageUrls[tabId] = [];
     }
   );
 
@@ -128,7 +134,6 @@
   // little bit later, namely at onCommitted.
   chrome.webNavigation.onCommitted.addListener(
     function(details) {
-      // set article data
       var url = config.apiUrl + '/articles/sources?handle=' + details.url;
       async.waterfall(
         [
@@ -144,67 +149,58 @@
     }
   );
 
-  // Chrome 42 doesn't properly fire chrome.webRequest.onCompleted/main_frame
-  // when loading a PDF page. When it's served from cache, it does.
-  // See <https://code.google.com/p/chromium/issues/detail?id=481411>.
+  var computeHash = function(url, hashType) {
+    return function(callback) {
+      fetch(url).then(function(response) {
+        return response.blob();
+      }).then(function(data) {
+        // read the blob data, cf.
+        // <https://developer.mozilla.org/en/docs/Web/API/FileReader>
+        var a = new FileReader();
+        a.readAsBinaryString(data);
+        a.onloadend = function() {
+          var hash = crypto.createHash(hashType);
+          hash.update(a.result, 'binary');
+          return callback(null, hash.digest('hex'));
+        };
+      }).catch(function(err) {
+        console.error(err.message);
+        return callback(
+          'Unexpected error when fetching ' + url
+        );
+      });
+    };
+  };
+
+  // TODO
+  // Check <http://stackoverflow.com/a/27771671/353337> for a complete rundown
+  // of how to detect if a page serves PDF content.
+  //
+  // Unfortnately, Chrome 42 doesn't properly fire
+  // chrome.webRequest.onCompleted/main_frame when loading a PDF page. When
+  // it's served from cache, it does. See
+  // <https://code.google.com/p/chromium/issues/detail?id=481411>.
   chrome.webRequest.onCompleted.addListener(
     function(details) {
-      if (!articleData[details.tabId]) {
-        var header = extractHeader(details.responseHeaders, 'content-type');
-        var mimetype = header && header.value.split(';', 1)[0];
-        if (mimetype === 'application/pdf') {
-          async.waterfall(
-            [
-              function getPdfHash(callback) {
-                // Since we have no access to the PDF data, we have to
-                // fetch it again and hope it gets served from cache.
-                // TODO come up with something smarter here
-                fetch(details.url).then(function(response) {
-                  return response.blob();
-                }).then(function(data) {
-                  // read the blob data, cf.
-                  // <https://developer.mozilla.org/en/docs/Web/API/FileReader>
-                  var a = new FileReader();
-                  a.readAsBinaryString(data);
-                  a.onloadend = function() {
-                    var hash = crypto.createHash('sha1');
-                    hash.update(a.result, 'binary');
-                    return callback(null, hash.digest('hex'));
-                  };
-                }).catch(function(err) {
-                  console.error(err.message);
-                  return callback(
-                    'Unexpected error when fetching ' + details.url
-                  );
-                });
-              },
-              function checkArticleBySha(hash, callback) {
-                var url = config.apiUrl + '/articles/bySha/' + hash;
-                console.log(hash);
-                console.log(url);
-                return checkArticle(url, details.tabId)(callback);
-                //fetch(url).then(function(response) {
-                //  if (response.status === 200) {
-                //    response.json().then(function(json) {
-                //      return callback(null, details.tabId, json);
-                //    });
-                //  } else if (response.status === 404) {
-                //    return callback('PDF not found on PaperHive (404)');
-                //  } else {
-                //    return callback('Unexpected return value');
-                //  }
-                //}).catch(function(err) {
-                //  console.error(err.message);
-                //  return callback('Unexpected error when fetching ' + url);
-                //});
-              },
-              checkDiscussions(details.tabId)
-            ],
-            responseData(details.tabId)
-          );
-        } else if (mimetype === 'text/html') {
-          // check content for hrefs that match the whitelist
-        }
+      var header = extractHeader(details.responseHeaders, 'content-type');
+      var mimetype = header && header.value.split(';', 1)[0];
+      if (mimetype === 'application/pdf') {
+        async.waterfall(
+          [
+            // Since we have no access to the PDF data, we have to fetch it
+            // again and hope it gets served from cache.
+            // TODO come up with something smarter here
+            computeHash(details.url, 'sha1'),
+            function checkArticleBySha(hash, callback) {
+              var url = config.apiUrl + '/articles/bySha/' + hash;
+              return checkArticle(url, details.tabId)(callback);
+            },
+            checkDiscussions(details.tabId)
+          ],
+          responseData(details.tabId)
+        );
+      } else if (mimetype === 'text/html') {
+        // check content for hrefs that match the whitelist
       }
     },
     {
