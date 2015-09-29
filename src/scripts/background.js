@@ -18,49 +18,16 @@
 
   var articleData = {};
   var pageUrls = {};
-  var responseSender = {};
+  var responseSender = [];
 
-  var handleResponse = function(tabId) {
-    return function(err, article, discussions) {
-      if (err) {
-        console.error(err);
-      }
-      // set data
-      articleData[tabId] = {
-        article: article,
-        discussions: discussions
-      };
-      // set icon
-      if (article) {
-        setColorIcon(tabId);
-        if (discussions && discussions.length > 0) {
-          //chrome.browserAction.setBadgeBackgroundColor([255, 0, 0, 255]);
-          var badge;
-          if (discussions.length < 1000) {
-            badge = discussions.length.toString();
-          } else {
-            badge = '999+';
-          }
-          chrome.browserAction.setBadgeText({
-            text: badge,
-            tabId: tabId
-          });
-        }
-      }
-      // send a response if so required
-      if (responseSender[tabId]) {
-        responseSender[tabId](articleData[tabId]);
-        responseSender[tabId] = null;
-      }
-    };
-  };
-
-  var fetchArticle = function(url) {
+  var checkArticle = function(url, tabId) {
     return function(callback) {
-      var fullUrl = config.apiUrl + '/articles/sources?handle=' + url;
-      fetch(fullUrl).then(function(response) {
+      fetch(url).then(function(response) {
         if (response.ok) {
+          setColorIcon(tabId);
           response.json().then(function(json) {
+            // set tab data for communication with the popup script
+            articleData[tabId].article = json;
             return callback(null, json);
           });
         } else {
@@ -68,26 +35,57 @@
         }
       }).catch(function(err) {
         console.error(err.message);
-        return callback('Unexpected error when fetching ' + fullUrl);
+        return callback('Unexpected error when fetching ' + url);
       });
     };
   };
 
-  var fetchDiscussions = function(article, callback) {
-    if (article && article._id) {
-      // fetch discussions
-      var url = config.apiUrl + '/articles/' + article._id + '/discussions/';
-      fetch(url).then(function(response) {
-        return response.json();
-      }).then(function(data) {
-        return callback(null, article, data);
-      }).catch(function(err) {
-        console.error(err.message);
-        return callback('Unexpected error when fetching ' + url);
-      });
-    } else {
-      return callback(null, article);
-    }
+  var checkDiscussions = function(tabId) {
+    return function(article, callback) {
+      if (article && article._id) {
+        // fetch discussions
+        var url = config.apiUrl + '/articles/' + article._id + '/discussions/';
+        fetch(url).then(function(response) {
+          response.json().then(function(discussions) {
+            // set icon
+            if (discussions && discussions.length > 0) {
+              //chrome.browserAction.setBadgeBackgroundColor([255, 0, 0, 255]);
+              var badge;
+              if (discussions.length < 1000) {
+                badge = discussions.length.toString();
+              } else {
+                badge = '999+';
+              }
+              chrome.browserAction.setBadgeText({
+                text: badge,
+                tabId: tabId
+              });
+            }
+            // set data
+            articleData[tabId].discussions = discussions;
+            return callback(null, discussions);
+          });
+        }).catch(function(err) {
+          console.error(err.message);
+          return callback('Unexpected error when fetching ' + url);
+        });
+      } else {
+        return callback(null);
+      }
+    };
+  };
+
+  var responseData = function(tabId) {
+    return function(err) {
+      if (err) {
+        console.error(err);
+      }
+      // send a response if so required
+      if (responseSender[tabId]) {
+        responseSender[tabId](articleData[tabId]);
+        responseSender[tabId] = null;
+      }
+    };
   };
 
   var setColorIcon = function(tabId) {
@@ -110,25 +108,34 @@
     }
   };
 
+  // create data item
+  chrome.tabs.onCreated.addListener(
+    function(tab) {
+      articleData[tab.id] = {};
+    }
+  );
   // clean up after tab close
   chrome.tabs.onRemoved.addListener(
-    function(tabId) {
-      articleData[tabId] = undefined;
-      pageUrls[tabId] = [];
+    function(tab) {
+      articleData[tab.id] = undefined;
+      pageUrls[tab.id] = [];
     }
   );
 
-  //chrome.webRequest.onBeforeRequest.addListener(
-  chrome.webNavigation.onBeforeNavigate.addListener(
+  // We could actually handle all this already at onBeforeNavigate, but Chrome
+  // appartently redraws the extension icons at that time, too. This way, the
+  // setColorIcon would sometimes have no effect. As a workaround, just draw a
+  // little bit later, namely at onCommitted.
+  chrome.webNavigation.onCommitted.addListener(
     function(details) {
-      console.log('webNavigation.onBeforeNavigate');
       // set article data
+      var url = config.apiUrl + '/articles/sources?handle=' + details.url;
       async.waterfall(
         [
-          fetchArticle(details.url),
-          fetchDiscussions
+          checkArticle(url, details.tabId),
+          checkDiscussions(details.tabId)
         ],
-        handleResponse(details.tabId)
+        responseData(details.tabId)
       );
     },
     {
@@ -136,11 +143,6 @@
       types: ['main_frame']
     }
   );
-
-  chrome.webNavigation.onCommitted.addListener(
-    function() {
-      console.log('webNavigation.onCommitted');
-    });
 
   // Chrome 42 doesn't properly fire chrome.webRequest.onCompleted/main_frame
   // when loading a PDF page. When it's served from cache, it does.
@@ -176,26 +178,29 @@
                   );
                 });
               },
-              function checkBySha(hash, callback) {
+              function checkArticleBySha(hash, callback) {
                 var url = config.apiUrl + '/articles/bySha/' + hash;
-                fetch(url).then(function(response) {
-                  if (response.status === 200) {
-                    response.json().then(function(json) {
-                      return callback(null, details.tabId, json);
-                    });
-                  } else if (response.status === 404) {
-                    return callback('PDF not found on PaperHive (404)');
-                  } else {
-                    return callback('Unexpected return value');
-                  }
-                }).catch(function(err) {
-                  console.error(err.message);
-                  return callback('Unexpected error when fetching ' + url);
-                });
+                console.log(hash);
+                console.log(url);
+                return checkArticle(url, details.tabId)(callback);
+                //fetch(url).then(function(response) {
+                //  if (response.status === 200) {
+                //    response.json().then(function(json) {
+                //      return callback(null, details.tabId, json);
+                //    });
+                //  } else if (response.status === 404) {
+                //    return callback('PDF not found on PaperHive (404)');
+                //  } else {
+                //    return callback('Unexpected return value');
+                //  }
+                //}).catch(function(err) {
+                //  console.error(err.message);
+                //  return callback('Unexpected error when fetching ' + url);
+                //});
               },
-              fetchDiscussions
+              checkDiscussions(details.tabId)
             ],
-            handleResponse(details.tabId)
+            responseData(details.tabId)
           );
         } else if (mimetype === 'text/html') {
           // check content for hrefs that match the whitelist
