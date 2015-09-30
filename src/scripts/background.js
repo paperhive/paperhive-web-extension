@@ -18,7 +18,7 @@
 
   var articleData = {};
   var pageUrls = {};
-  var responseSender = [];
+  var responseSender = {};
 
   var checkArticle = function(url, tabId) {
     return function(callback) {
@@ -83,9 +83,14 @@
       if (err) {
         console.error(err);
       }
-      // send a response if so required
+      // If the user clicks on the extension icon before the data is loaded,
+      // the data communication request is delayed until the data is available.
+      // Namely here! :)
+      // Fulfill the promise and remove the sender afterwards.
       if (responseSender[tabId]) {
+        // send the data
         responseSender[tabId](articleData[tabId]);
+        // remove the dangling request
         responseSender[tabId] = null;
       }
     };
@@ -213,12 +218,11 @@
   // add listener for content script communication
   chrome.runtime.onMessage.addListener(
     function(request, sender, sendResponse) {
+      // The tab ID is either in the sender (if a content script sent the
+      // request) or in the request.activeTabId (if popup.js sent the request).
       var tabId = request.activeTabId || sender.tab.id;
       if (tabId) {
         if (request.getArticleData) {
-          // The tab ID is either in the sender (if a content script sent the
-          // request) or in the request.activeTabId (if popup.js sent the
-          // request).
           if (articleData[tabId]) {
             // send immediately since the tab is fully loaded
             sendResponse(articleData[tabId]);
@@ -244,7 +248,7 @@
         //  }
         //}
       } else {
-        console.error('Could not find tab ID.');
+        console.error('Invalid tab ID.');
       }
     }
   );
