@@ -1,6 +1,6 @@
 {
   "name": "paperhive-chrome-extension",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "dependencies": {
     "angular": "1.4.6",
     "async": "1.4.2",

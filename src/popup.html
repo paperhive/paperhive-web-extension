@@ -23,6 +23,14 @@
     </header>
 
     <main>
+    <div ng-if="!article.meta" class="well">
+      This page is not yet available for discussion on PaperHive.
+      Do you think it would be a worthwhile addition?
+      <p>
+      <a href="{{frontendUrl}}">Let us know!</a>
+      </p>
+    </div>
+
     <div ng-if="article.meta" class="panel panel-default">
       <div class="panel-body">
         <h4>
@@ -79,21 +87,32 @@
     </main>
 
     <footer class="ph-footer">
-      <a ng-if="article.meta._id"
+      <a ng-if="article.meta && article.meta._id"
          id="link" target="_blank" role="button" class="btn btn-primary"
          ng-href="{{frontendUrl}}/articles/{{article.meta._id}}"
          >
         Open in PaperHive
       </a>
-      <button ng-if="!article.meta._id"
+
+      <button ng-if="article.meta && !article.meta._id"
          type="submit"
-         ng-click="submitApproved()"
+         ng-click="submitApproved(article.url)"
          class="btn btn-primary"
+         ng-disabled="submitting || !article.url"
          >
          <i class="fa fa-fw fa-plus" ng-if="!submitting"></i>
          <i class="fa fa-fw fa-spinner fa-spin" ng-if="submitting"></i>
          Open in PaperHive
       </button>
+
+      <a ng-if="!article.meta"
+         type="link"
+         class="btn btn-primary"
+         target="_blank"
+         href="{{frontendUrl}}/contact/"
+         >
+         Contact PaperHive
+      </a>
 
       <!--span ng-if="!article.meta && !isWhitelistedHost">
         PaperHive only deals with PDFs from whitelisted sources. If you like to
