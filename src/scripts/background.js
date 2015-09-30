@@ -252,4 +252,46 @@
       }
     }
   );
+
+  // A function creator for callbacks
+  function searchTitleOnPaperhive(meta) {
+    var key = 'citation_title';
+    console.log(meta[key]);
+    //var url = config.apiUrl + '/articles/?q=' + meta[key];
+    var url = config.apiUrl + '/articles/?q=Creating';
+
+    // curl https://paperhive.org/dev/backend/branches/master/articles/?q=Creating
+    //
+    fetch(url)
+    .then(function(response) {
+      if (response.ok) {
+        response.json().then(function(json) {
+          // TODO do something with the result
+        });
+      } else {
+        console.error(
+          'Query unsuccessful (\'' + response.status + ', ' +
+            response.statusText + '\').'
+        );
+      }
+    })
+    .catch(function(err) {
+      console.error(err.message);
+      //return callback('Unexpected error when fetching ' + url);
+    });
+  }
+
+  chrome.webNavigation.onCompleted.addListener(
+    function(details) {
+      chrome.tabs.sendMessage(
+        details.tabId,
+        {keys: ['citation_title']},
+        searchTitleOnPaperhive
+      );
+    },
+    {
+      types: ['main_frame']
+    }
+  );
+
 })();
