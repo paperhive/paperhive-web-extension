@@ -53,6 +53,13 @@
           currentWindow: true
         },
         function(tabs) {
+          // expose tab url to popup.html
+          // for some reason, we need $apply here
+          // TODO find out why
+          $scope.$apply(function() {
+            $scope.tabUrl = tabs[0].url;
+          });
+          // get article data
           chrome.runtime.sendMessage(
             {getArticleData: true, activeTabId: tabs[0].id},
             function(response) {
@@ -60,12 +67,10 @@
               $scope.$apply(function() {
                 $scope.article.meta = response.article;
                 $scope.article.discussions = response.discussions;
-                if ($scope.article.meta) {
-                  $scope.article.url = tabs[0].url;
-                }
               });
             }
           );
-        });
+        }
+      );
     }]);
 })();
