@@ -26,9 +26,6 @@
     <div ng-if="!article.meta" class="well">
       This page is not yet available for discussion on PaperHive.
       Do you think it would be a worthwhile addition?
-      <p>
-      <a href="{{frontendUrl}}">Let us know!</a>
-      </p>
     </div>
 
     <div ng-if="article.meta" class="panel panel-default">
@@ -96,9 +93,9 @@
 
       <button ng-if="article.meta && !article.meta._id"
          type="submit"
-         ng-click="submitApproved(article.url)"
+         ng-click="submitApproved(tabUrl)"
          class="btn btn-primary"
-         ng-disabled="submitting || !article.url"
+         ng-disabled="submitting"
          >
          <i class="fa fa-fw fa-plus" ng-if="!submitting"></i>
          <i class="fa fa-fw fa-spinner fa-spin" ng-if="submitting"></i>
@@ -109,9 +106,18 @@
          type="link"
          class="btn btn-primary"
          target="_blank"
-         href="{{frontendUrl}}/contact/"
+         ng-href="
+mailto:info@paperhive.org
+?subject=Article suggestion
+&body=Hi,%0D%0A%0D%0A
+I found this article on%0D%0A
+%0D%0A
+  {{tabUrl}}%0D%0A
+%0D%0A
+and I think you should add it PaperHive.%0D%0A%0D%0A
+Thanks!"
          >
-         Contact PaperHive
+         Yes!
       </a>
 
       <!--span ng-if="!article.meta && !isWhitelistedHost">
