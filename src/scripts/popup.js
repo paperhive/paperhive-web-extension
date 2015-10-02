@@ -53,19 +53,24 @@
           currentWindow: true
         },
         function(tabs) {
+          // expose tab url to popup.html
+          // We need $apply here, see, e.g.,
+          // <http://jimhoskins.com/2012/12/17/angularjs-and-apply.html>.
+          $scope.$apply(function() {
+            $scope.tabUrl = tabs[0].url;
+          });
+          // get article data
           chrome.runtime.sendMessage(
             {getArticleData: true, activeTabId: tabs[0].id},
             function(response) {
-              // for some reason, we need $apply here
+              // same as above
               $scope.$apply(function() {
                 $scope.article.meta = response.article;
                 $scope.article.discussions = response.discussions;
-                if ($scope.article.meta) {
-                  $scope.article.url = tabs[0].url;
-                }
               });
             }
           );
-        });
+        }
+      );
     }]);
 })();
