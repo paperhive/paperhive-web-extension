@@ -278,6 +278,7 @@
     });
   }
 
+  /*
   chrome.webNavigation.onCompleted.addListener(
     function(details) {
       chrome.tabs.sendMessage(
@@ -290,5 +291,6 @@
       types: ['main_frame']
     }
   );
+  */
 
 })();
