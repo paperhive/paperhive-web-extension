@@ -181,7 +181,7 @@
   // Check <http://stackoverflow.com/a/27771671/353337> for a complete rundown
   // of how to detect if a page serves PDF content.
   //
-  // Unfortnately, Chrome 42 doesn't properly fire
+  // Unfortunately, Chrome 42 doesn't properly fire
   // chrome.webRequest.onCompleted/main_frame when loading a PDF page. When
   // it's served from cache, it does. See
   // <https://code.google.com/p/chromium/issues/detail?id=481411>.
@@ -235,18 +235,6 @@
             return true;
           }
         }
-
-        //if (request.askAboutPageUrls) {
-        //  sendResponse({needPageUrls: !articleData[tabId]});
-        //}
-
-        //if (request.pageUrls) {
-        //  console.log(request.pageUrls);
-        //  pageUrls[tabId] = request.pageUrls;
-        //  for (var i = 0; i < pageUrls[tabId].length; i++) {
-        //    console.log(pageUrls[tabId][i]);
-        //  }
-        //}
       } else {
         console.error('Invalid tab ID.');
       }

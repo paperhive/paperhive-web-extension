@@ -27,8 +27,7 @@
       "matches": ["*://*/*"],
       "css": ["content.css"],
       "js": [
-        "scripts/content.js",
-        "scripts/findUrls.js"
+        "scripts/content.js"
       ]
     }
   ],
