@@ -7,38 +7,27 @@
 
 (function() {
 
-  var config = require('../../config.json');
-
-  chrome.runtime.sendMessage(
-    {
-      getArticleData: true
-    },
-    function(response) {
-      if (response.article && response.discussions) {
-        var elemDiv = document.createElement('div');
-        elemDiv.className = 'ph-notification-box';
-        var text;
-        if (response.discussions.length === 1) {
-          text =
-            'There is <strong>1</strong> open discussion ' +
-            'for this document on PaperHive.';
-        } else if (response.discussions.length > 1) {
-          text = 'There are <strong>' + response.discussions.length +
-            '</strong> open discussions for this document on PaperHive.';
-        }
-        if (text) {
-          //var content = document.createTextNode(text);
-          //elemDiv.appendChild(content);
-          elemDiv.innerHTML = elemDiv.innerHTML +
-            '<a target="_blank" href="' +
-            config.frontendUrl + '/articles/' + response.article._id +
-            '">' +
-            text +
-            '</a>';
-
-          document.body.appendChild(elemDiv);
-        }
+  // http://stackoverflow.com/a/1268202/353337
+  var getMeta = function(keys) {
+    // extract a bunch of given keys from the meta section of the document
+    var out = {};
+    var metas = document.getElementsByTagName('meta');
+    for (var i = 0; i < metas.length; i++) {
+      var lowercaseKey = metas[i].getAttribute('name').toLowerCase();
+      if (keys.indexOf(lowercaseKey) >= 0) {
+        out[lowercaseKey] = metas[i].getAttribute('content');
       }
-    });
+    }
+    return out;
+  };
+
+  // Listen for messages
+  chrome.runtime.onMessage.addListener(function(msg, sender, sendResponse) {
+    // If the received message has the expected format...
+    if (msg.keys) {
+      // sendResponse(document.all[0].outerHTML);
+      sendResponse(getMeta(msg.keys));
+    }
+  });
 
 })();

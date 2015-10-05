@@ -252,4 +252,45 @@
       }
     }
   );
+
+  // A function creator for callbacks
+  function searchDoiOnPaperhive(meta) {
+    var key = 'citation_doi';
+    var url = config.apiUrl + '/articles/doi/' + meta[key];
+
+    fetch(url)
+    .then(function(response) {
+      if (response.ok) {
+        response.json().then(function(json) {
+          console.log(json);
+          // TODO do something with the result
+        });
+      } else {
+        console.error(
+          'Query unsuccessful (\'' + response.status + ', ' +
+            response.statusText + '\').'
+        );
+      }
+    })
+    .catch(function(err) {
+      console.error(err.message);
+      //return callback('Unexpected error when fetching ' + url);
+    });
+  }
+
+  /*
+  chrome.webNavigation.onCompleted.addListener(
+    function(details) {
+      chrome.tabs.sendMessage(
+        details.tabId,
+        {keys: ['citation_doi']},
+        searchDoiOnPaperhive
+      );
+    },
+    {
+      types: ['main_frame']
+    }
+  );
+  */
+
 })();
