@@ -254,18 +254,15 @@
   );
 
   // A function creator for callbacks
-  function searchTitleOnPaperhive(meta) {
-    var key = 'citation_title';
-    console.log(meta[key]);
-    //var url = config.apiUrl + '/articles/?q=' + meta[key];
-    var url = config.apiUrl + '/articles/?q=Creating';
+  function searchDoiOnPaperhive(meta) {
+    var key = 'citation_doi';
+    var url = config.apiUrl + '/articles/doi/' + meta[key];
 
-    // curl https://paperhive.org/dev/backend/branches/master/articles/?q=Creating
-    //
     fetch(url)
     .then(function(response) {
       if (response.ok) {
         response.json().then(function(json) {
+          console.log(json);
           // TODO do something with the result
         });
       } else {
@@ -285,8 +282,8 @@
     function(details) {
       chrome.tabs.sendMessage(
         details.tabId,
-        {keys: ['citation_title']},
-        searchTitleOnPaperhive
+        {keys: ['citation_doi']},
+        searchDoiOnPaperhive
       );
     },
     {
