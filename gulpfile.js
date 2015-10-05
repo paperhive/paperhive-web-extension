@@ -76,8 +76,7 @@ gulp.task('scripts', ['jshint', 'jscs'], function() {
   var background = js(false, 'background.js');
   var popup = js(false, 'popup.js');
   var content = js(false, 'content.js');
-  var findUrls = js(false, 'findUrls.js');
-  merge(background, popup, content, findUrls);
+  merge(background, popup, content);
 });
 
 var imageminOpts = {
