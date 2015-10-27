@@ -18,7 +18,7 @@
     "gulp-htmlhint": "0.3.0",
     "gulp-htmlmin": "1.2.0",
     "gulp-imagemin": "2.3.0",
-    "gulp-jscs": "3.0.1",
+    "gulp-jscs": "3.0.2",
     "gulp-jscs-stylish": "1.2.1",
     "gulp-jshint": "1.11.2",
     "gulp-less": "3.0.3",
