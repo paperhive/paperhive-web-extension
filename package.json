@@ -20,7 +20,7 @@
     "gulp-imagemin": "2.3.0",
     "gulp-jscs": "3.0.2",
     "gulp-jscs-stylish": "1.2.1",
-    "gulp-jshint": "1.11.2",
+    "gulp-jshint": "1.12.0",
     "gulp-less": "3.0.3",
     "gulp-minify-css": "1.2.1",
     "gulp-sourcemaps": "1.6.0",
