@@ -11,6 +11,22 @@ Status](https://gemnasium.com/paperhive/paperhive-chrome-extension.svg)](https:/
 the`./build/` directory.
 * Go to a page that has PaperHive discussions (e.g., https://arxiv.org/pdf/1208.0264.pdf) and see if it works for you.
 
+##Distribution
+* Make sure you bumped the version number in `package.json` and
+  `src/manifest.json`.
+* Build the extension
+  ```
+  gulp
+  ```
+  It will be zipped as `./paperhive.zip`.
+* Go to [PaperHive's web store page](https://chrome.google.com/webstore/developer/edit/fihafdlllifbanclcjljledeifcdjbok)
+  and upload a new package.
+* Create Git tag
+  ```
+  git tag -a v0.1.0
+  git push --tags
+  ```
+
 ## License
 The PaperHive Chrome Extension is licensed under the
 [GPL3](https://www.gnu.org/licenses/gpl.html) license.
