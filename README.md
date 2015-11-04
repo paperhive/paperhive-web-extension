@@ -14,18 +14,24 @@ the`./build/` directory.
 ##Distribution
 * Make sure you bumped the version number in `package.json` and
   `src/manifest.json`.
+* Make sure you are on the `master` branch.
 * Build the extension
   ```
   gulp
   ```
   It will be zipped as `./paperhive.zip`.
-* Go to [PaperHive's web store page](https://chrome.google.com/webstore/developer/edit/fihafdlllifbanclcjljledeifcdjbok)
-  and upload a new package.
 * Create Git tag
   ```
   git tag -a v0.1.0
   git push --tags
   ```
+
+### Chrome
+* Go to [PaperHive's web store page](https://chrome.google.com/webstore/developer/edit/fihafdlllifbanclcjljledeifcdjbok)
+  and upload a new package.
+
+### Firefox
+* Not quite ready yet.
 
 ## License
 The PaperHive Chrome Extension is licensed under the
