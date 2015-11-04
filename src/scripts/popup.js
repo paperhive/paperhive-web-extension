@@ -22,7 +22,7 @@
         if (url) {
           $scope.submitting = true;
           $http.post(config.apiUrl + '/articles/sources', undefined, {
-            params: {handle: url},
+            params: {handle: url}
           })
           .success(function(article) {
             $scope.submitting = false;
