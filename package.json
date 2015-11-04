@@ -17,10 +17,10 @@
     "gulp": "3.9.0",
     "gulp-htmlhint": "0.3.0",
     "gulp-htmlmin": "1.1.4",
-    "gulp-imagemin": "2.3.0",
+    "gulp-imagemin": "2.4.0",
     "gulp-jscs": "3.0.0",
     "gulp-jscs-stylish": "1.2.0",
-    "gulp-jshint": "1.11.2",
+    "gulp-jshint": "1.12.0",
     "gulp-less": "3.0.3",
     "gulp-minify-css": "1.2.1",
     "gulp-sourcemaps": "1.6.0",
@@ -34,7 +34,7 @@
     "merge-stream": "1.0.0",
     "vinyl-buffer": "1.0.0",
     "vinyl-source-stream": "1.1.0",
-    "watchify": "3.4.0"
+    "watchify": "3.6.0"
   },
   "engines": {
     "node": ">=0.8.0"
