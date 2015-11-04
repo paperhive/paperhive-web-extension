@@ -1,9 +1,7 @@
 'use strict';
 
 var gulp   = require('gulp');
-var jshint = require('gulp-jshint');
-var jscs = require('gulp-jscs');
-var jscsStylish = require('gulp-jscs-stylish');
+var eslint = require('gulp-eslint');
 var htmlhint = require('gulp-htmlhint');
 var gutil = require('gulp-util');
 var source = require('vinyl-source-stream');
@@ -72,7 +70,7 @@ function js(watch, file) {
   return rebundle();
 }
 
-gulp.task('scripts', ['jshint', 'jscs'], function() {
+gulp.task('scripts', ['eslint'], function() {
   var background = js(false, 'background.js');
   var popup = js(false, 'popup.js');
   var content = js(false, 'content.js');
@@ -80,7 +78,9 @@ gulp.task('scripts', ['jshint', 'jscs'], function() {
 });
 
 var imageminOpts = {
-  progressive: true,
+  interlaced: true,  // gif
+  multipass: true,  // svg
+  progressive: true,  // jpg
   svgoPlugins: [{removeViewBox: false}],
   use: [pngquant()]
 };
@@ -106,16 +106,11 @@ gulp.task('static', function() {
   return merge(locales, manifest, fontawesome, roboto, images);
 });
 
-gulp.task('jshint', function() {
-  return gulp.src(paths.js)
-  .pipe(jshint())
-  .pipe(jshint.reporter('default'));
-});
-
-gulp.task('jscs', function() {
-  return gulp.src(paths.js)
-  .pipe(jscs())
-  .pipe(jscsStylish());  // log style errors
+gulp.task('eslint', function() {
+  return gulp.src(['./src/scripts/*.js'])
+  .pipe(eslint())
+  .pipe(eslint.format())
+  .pipe(eslint.failAfterError());
 });
 
 var htmlhintOpts = {
