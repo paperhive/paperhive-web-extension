@@ -6,28 +6,29 @@
 'use strict';
 
 (function() {
-
-  // http://stackoverflow.com/a/1268202/353337
-  var getMeta = function(keys) {
-    // extract a bunch of given keys from the meta section of the document
-    var out = {};
+  var getMetaValue = function(keys) {
+    // Extract the value of a given meta key. If more than one key is given, it
+    // returns the value of the first key it finds.
     var metas = document.getElementsByTagName('meta');
-    for (var i = 0; i < metas.length; i++) {
-      var lowercaseKey = metas[i].getAttribute('name').toLowerCase();
-      if (keys.indexOf(lowercaseKey) >= 0) {
-        out[lowercaseKey] = metas[i].getAttribute('content');
+    for (var i = 0; i < keys.length; i++) {
+      // namedItem() should be case insensitive, cf.
+      // <http://www.w3.org/TR/DOM-Level-2-HTML/html.html>
+      var item = metas.namedItem(keys[i]);
+      if (item) {
+        var content = item.getAttribute('content');
+        if (content) {
+          return content;
+        }
       }
     }
-    return out;
+    return null;
   };
 
   // Listen for messages
   chrome.runtime.onMessage.addListener(function(msg, sender, sendResponse) {
     // If the received message has the expected format...
     if (msg.keys) {
-      // sendResponse(document.all[0].outerHTML);
-      sendResponse(getMeta(msg.keys));
+      sendResponse(getMetaValue(msg.keys));
     }
   });
-
 })();

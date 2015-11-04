@@ -43,6 +43,33 @@
     };
   };
 
+  // The only difference with checkArticle is that the returned JSON object is
+  // an array here.
+  // Once we hace article revisions working in the backend, we expect to fetch
+  // a meta article in all cases, so these two functions can be merged again.
+  var checkArticleByDoi = function(url, tabId) {
+    return function(callback) {
+      fetch(url).then(function(response) {
+        if (response.ok) {
+          setColorIcon(tabId);
+          response.json().then(function(json) {
+            // set tab data for communication with the popup script
+            if (!(tabId in articleData)) {
+              articleData[tabId] = {};
+            }
+            articleData[tabId].article = json[0];
+            return callback(null, json);
+          });
+        } else {
+          return callback(null, null);
+        }
+      }).catch(function(err) {
+        console.error(err.message);
+        return callback('Unexpected error when fetching ' + url);
+      });
+    };
+  };
+
   var checkDiscussions = function(tabId) {
     return function(article, callback) {
       if (article && article._id) {
@@ -127,7 +154,6 @@
   // clean up after tab close
   chrome.tabs.onRemoved.addListener(
     function(tabId) {
-      console.log('tabs.onRemoved ' + tabId);
       articleData[tabId] = undefined;
       pageUrls[tabId] = [];
     }
@@ -241,37 +267,28 @@
     }
   );
 
-  // A function creator for callbacks
-  function searchDoiOnPaperhive(meta) {
-    var key = 'citation_doi';
-    var url = config.apiUrl + '/articles/doi/' + meta[key];
-
-    fetch(url)
-    .then(function(response) {
-      if (response.ok) {
-        response.json().then(function(json) {
-          console.log(json);
-          // TODO do something with the result
-        });
-      } else {
-        console.error(
-          'Query unsuccessful (\'' + response.status + ', ' +
-            response.statusText + '\').'
-        );
-      }
-    })
-    .catch(function(err) {
-      console.error(err.message);
-      //return callback('Unexpected error when fetching ' + url);
-    });
-  }
-
-  /*
+  // DOI checker
   chrome.webNavigation.onCompleted.addListener(
     function(details) {
+      var searchDoiOnPaperhive = function(doi) {
+        if (!doi) {return;}
+        var url = config.apiUrl + '/articles/byDoi/' + encodeURIComponent(doi);
+        async.waterfall(
+          [
+            checkArticleByDoi(url, details.tabId),
+            checkDiscussions(details.tabId)
+          ],
+          responseData(details.tabId)
+        );
+      };
+
+      // We would like to check the meta keys 'citation_doi'
+      // and 'dc.identifier'. Since this needs parsing the actual HTML content,
+      // we have to do it in the content script. Have that call back on
+      // searchDoiOnPaperhive where we process the dois.
       chrome.tabs.sendMessage(
         details.tabId,
-        {keys: ['citation_doi']},
+        {keys: ['citation_doi', 'DC.Identifier']},
         searchDoiOnPaperhive
       );
     },
@@ -279,6 +296,5 @@
       types: ['main_frame']
     }
   );
-  */
 
 })();
