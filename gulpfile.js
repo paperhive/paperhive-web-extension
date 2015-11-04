@@ -80,7 +80,9 @@ gulp.task('scripts', ['jshint', 'jscs'], function() {
 });
 
 var imageminOpts = {
-  progressive: true,
+  interlaced: true,  // gif
+  multipass: true,  // svg
+  progressive: true,  // jpg
   svgoPlugins: [{removeViewBox: false}],
   use: [pngquant()]
 };
