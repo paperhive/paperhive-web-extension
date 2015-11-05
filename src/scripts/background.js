@@ -165,6 +165,10 @@
   // little bit later, namely at onCommitted.
   chrome.webNavigation.onCommitted.addListener(
     function(details) {
+      if (details.frameId !== 0) {
+        // don't do anything if we're not in the main frame
+        return;
+      }
       var url = config.apiUrl + '/articles/sources?handle=' + details.url;
       async.waterfall(
         [
@@ -270,6 +274,11 @@
   // DOI checker
   chrome.webNavigation.onCompleted.addListener(
     function(details) {
+      if (details.frameId !== 0) {
+        // don't do anything if we're not in the main frame
+        return;
+      }
+
       var searchDoiOnPaperhive = function(doi) {
         if (!doi) {return;}
         var url = config.apiUrl + '/articles/byDoi/' + encodeURIComponent(doi);
