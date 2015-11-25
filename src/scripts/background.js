@@ -4,39 +4,52 @@
  * License: GPL-3
  */
 'use strict';
-(function() {
-  var crypto = require('crypto');
-  var async = require('async');
-  var config = require('../../config.json');
 
-  var sources = require('paperhive-sources');
+(() => {
+  const crypto = require('crypto');
+  const async = require('async');
+  const config = require('../../config.json');
+  const _ = require('lodash');
+
+  const sources = require('paperhive-sources');
   // https://developer.chrome.com/extensions/events#filtered
-  var urlFilter = [];
-  sources.hostnames.forEach(function(hostname) {
+  const urlFilter = [];
+  sources.hostnames.forEach((hostname) => {
     urlFilter.push({hostSuffix: hostname});
   });
 
-  var articleData = {};
-  var pageUrls = {};
-  var responseSender = {};
+  const articleData = {};
+  const pageUrls = {};
+  const responseSender = {};
 
-  var checkArticle = function(url, tabId) {
-    return function(callback) {
-      fetch(url).then(function(response) {
+  const setColorIcon = (tabId) => {
+    chrome.browserAction.setIcon({
+      path: {
+        '19': 'images/icon-19.png',
+        '38': 'images/icon-38.png',
+      },
+      tabId: tabId,
+    });
+  };
+
+  const checkArticle = (url, tabId) => {
+    return function cb(callback) {
+      fetch(url).then((response) => {
         if (response.ok) {
           setColorIcon(tabId);
-          response.json().then(function(json) {
+          response.json().then((json) => {
             // set tab data for communication with the popup script
             if (!(tabId in articleData)) {
               articleData[tabId] = {};
             }
+            // articleData[tabId].article = _.cloneDeep(json);
             articleData[tabId].article = json;
             return callback(null, json);
           });
         } else {
           return callback(null, null);
         }
-      }).catch(function(err) {
+      }).catch((err) => {
         console.error(err.message);
         return callback('Unexpected error when fetching ' + url);
       });
@@ -47,12 +60,12 @@
   // an array here.
   // Once we hace article revisions working in the backend, we expect to fetch
   // a meta article in all cases, so these two functions can be merged again.
-  var checkArticleByDoi = function(url, tabId) {
-    return function(callback) {
-      fetch(url).then(function(response) {
+  const checkArticleByDoi = (url, tabId) => {
+    return function cb(callback) {
+      fetch(url).then((response) => {
         if (response.ok) {
           setColorIcon(tabId);
-          response.json().then(function(json) {
+          response.json().then((json) => {
             // set tab data for communication with the popup script
             if (!(tabId in articleData)) {
               articleData[tabId] = {};
@@ -63,24 +76,25 @@
         } else {
           return callback(null, null);
         }
-      }).catch(function(err) {
+      }).catch((err) => {
         console.error(err.message);
         return callback('Unexpected error when fetching ' + url);
       });
     };
   };
 
-  var checkDiscussions = function(tabId) {
-    return function(article, callback) {
+  const checkDiscussions = (tabId) => {
+    return function cb(article, callback) {
       if (article && article._id) {
         // fetch discussions
-        var url = config.apiUrl + '/articles/' + article._id + '/discussions/';
-        fetch(url).then(function(response) {
-          response.json().then(function(discussions) {
+        const url = config.apiUrl +
+          '/articles/' + article._id + '/discussions/';
+        fetch(url).then((response) => {
+          response.json().then((discussions) => {
             // set icon
             if (discussions && discussions.length > 0) {
-              //chrome.browserAction.setBadgeBackgroundColor([255, 0, 0, 255]);
-              var badge;
+              // chrome.browserAction.setBadgeBackgroundColor([255, 0, 0, 255]);
+              let badge;
               if (discussions.length < 1000) {
                 badge = discussions.length.toString();
               } else {
@@ -88,14 +102,14 @@
               }
               chrome.browserAction.setBadgeText({
                 text: badge,
-                tabId: tabId
+                tabId: tabId,
               });
             }
             // set data
             articleData[tabId].discussions = discussions;
             return callback(null, discussions);
           });
-        }).catch(function(err) {
+        }).catch((err) => {
           console.error(err.message);
           return callback('Unexpected error when fetching ' + url);
         });
@@ -105,8 +119,8 @@
     };
   };
 
-  var responseData = function(tabId) {
-    return function(err) {
+  const responseData = (tabId) => {
+    return function cb(err) {
       if (err) {
         console.error(err);
       }
@@ -123,37 +137,27 @@
     };
   };
 
-  var setColorIcon = function(tabId) {
-    chrome.browserAction.setIcon({
-      path: {
-        '19': 'images/icon-19.png',
-        '38': 'images/icon-38.png'
-      },
-      tabId: tabId
-    });
-  };
-
   // from <http://stackoverflow.com/a/21042958/353337>
-  var extractHeader = function(headers, headerName) {
-    for (var i = 0; i < headers.length; ++i) {
-      var header = headers[i];
+  const extractHeader = (headers, headerName) => {
+    for (let i = 0; i < headers.length; ++i) {
+      const header = headers[i];
       if (header.name.toLowerCase() === headerName) {
         return header;
       }
     }
   };
 
-  //// create data item
-  //chrome.tabs.onCreated.addListener(
-  //  function(tab) {
-  //    console.log('tabs.onCreated ' + tab.id);
-  //    articleData[tab.id] = {};
-  //  }
-  //);
+  // // create data item
+  // chrome.tabs.onCreated.addListener(
+  //   function(tab) {
+  //     console.log('tabs.onCreated ' + tab.id);
+  //     articleData[tab.id] = {};
+  //   }
+  // );
 
   // clean up after tab close
   chrome.tabs.onRemoved.addListener(
-    function(tabId) {
+    (tabId) => {
       articleData[tabId] = undefined;
       pageUrls[tabId] = [];
     }
@@ -164,41 +168,41 @@
   // setColorIcon would sometimes have no effect. As a workaround, just draw a
   // little bit later, namely at onCommitted.
   chrome.webNavigation.onCommitted.addListener(
-    function(details) {
+    (details) => {
       if (details.frameId !== 0) {
         // don't do anything if we're not in the main frame
         return;
       }
-      var url = config.apiUrl + '/articles/sources?handle=' + details.url;
+      const url = config.apiUrl + '/articles/sources?handle=' + details.url;
       async.waterfall(
         [
           checkArticle(url, details.tabId),
-          checkDiscussions(details.tabId)
+          checkDiscussions(details.tabId),
         ],
         responseData(details.tabId)
       );
     },
     {
       url: urlFilter,
-      types: ['main_frame']
+      types: ['main_frame'],
     }
   );
 
-  var computeHash = function(url, hashType) {
-    return function(callback) {
-      fetch(url).then(function(response) {
+  const computeHash = (url, hashType) => {
+    return function cb(callback) {
+      fetch(url).then((response) => {
         return response.blob();
-      }).then(function(data) {
+      }).then((data) => {
         // read the blob data, cf.
         // <https://developer.mozilla.org/en/docs/Web/API/FileReader>
-        var a = new FileReader();
+        const a = new FileReader();
         a.readAsBinaryString(data);
-        a.onloadend = function() {
-          var hash = crypto.createHash(hashType);
+        a.onloadend = () => {
+          const hash = crypto.createHash(hashType);
           hash.update(a.result, 'binary');
           return callback(null, hash.digest('hex'));
         };
-      }).catch(function(err) {
+      }).catch((err) => {
         console.error(err.message);
         return callback(
           'Unexpected error when fetching ' + url
@@ -216,14 +220,14 @@
   // it's served from cache, it does. See
   // <https://code.google.com/p/chromium/issues/detail?id=481411>.
   chrome.webRequest.onCompleted.addListener(
-    function(details) {
+    (details) => {
       if (details.frameId !== 0) {
         // don't do anything if we're not in the main frame
         return;
       }
 
-      var header = extractHeader(details.responseHeaders, 'content-type');
-      var mimetype = header && header.value.split(';', 1)[0];
+      const header = extractHeader(details.responseHeaders, 'content-type');
+      const mimetype = header && header.value.split(';', 1)[0];
       if (mimetype !== 'application/pdf') {
         return;
       }
@@ -235,30 +239,30 @@
           // TODO come up with something smarter here
           computeHash(details.url, 'sha1'),
           function checkArticleBySha(hash, callback) {
-            var url = config.apiUrl + '/articles/bySha/' + hash;
+            const url = config.apiUrl + '/articles/bySha/' + hash;
             return checkArticle(url, details.tabId)(callback);
           },
-          checkDiscussions(details.tabId)
+          checkDiscussions(details.tabId),
         ],
         responseData(details.tabId)
         );
     },
     {
       urls: ['*://*/*'],
-      types: ['main_frame']
+      types: ['main_frame'],
     },
     ['responseHeaders']
   );
 
   // add listener for content script communication
   chrome.runtime.onMessage.addListener(
-    function(request, sender, sendResponse) {
+    (request, sender, sendResponse) => {
       // The tab ID is either in the sender (if a content script sent the
       // request) or in the request.activeTabId (if popup.js sent the request).
-      var tabId = request.activeTabId || sender.tab.id;
+      const tabId = request.activeTabId || sender.tab.id;
       if (tabId) {
         if (request.getArticleData) {
-          if (articleData[tabId]) {
+          if (articleData[tabId].article) {
             // send immediately since the tab is fully loaded
             sendResponse(articleData[tabId]);
           } else {
@@ -278,19 +282,20 @@
 
   // DOI checker
   chrome.webNavigation.onCompleted.addListener(
-    function(details) {
+    (details) => {
       if (details.frameId !== 0) {
         // don't do anything if we're not in the main frame
         return;
       }
 
-      var searchDoiOnPaperhive = function(doi) {
+      const searchDoiOnPaperhive = (doi) => {
         if (!doi) {return;}
-        var url = config.apiUrl + '/articles/byDoi/' + encodeURIComponent(doi);
+        const url = config.apiUrl +
+          '/articles/byDoi/' + encodeURIComponent(doi);
         async.waterfall(
           [
             checkArticleByDoi(url, details.tabId),
-            checkDiscussions(details.tabId)
+            checkDiscussions(details.tabId),
           ],
           responseData(details.tabId)
         );
@@ -300,6 +305,10 @@
       // 'dc.identifier'. Since this needs parsing the actual HTML content, we
       // have to do it in the content script. Have that call back on
       // searchDoiOnPaperhive where we process the dois.
+      if (articleData[details.tabId].article) {
+        // don't take action if we already have data
+        return;
+      }
       chrome.tabs.sendMessage(
         details.tabId,
         {keys: ['citation_doi', 'DC.Identifier']},
@@ -307,8 +316,7 @@
       );
     },
     {
-      types: ['main_frame']
+      types: ['main_frame'],
     }
   );
-
 })();
