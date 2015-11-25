@@ -217,26 +217,31 @@
   // <https://code.google.com/p/chromium/issues/detail?id=481411>.
   chrome.webRequest.onCompleted.addListener(
     function(details) {
+      if (details.frameId !== 0) {
+        // don't do anything if we're not in the main frame
+        return;
+      }
+
       var header = extractHeader(details.responseHeaders, 'content-type');
       var mimetype = header && header.value.split(';', 1)[0];
-      if (mimetype === 'application/pdf') {
-        async.waterfall(
-          [
-            // Since we have no access to the PDF data, we have to fetch it
-            // again and hope it gets served from cache.
-            // TODO come up with something smarter here
-            computeHash(details.url, 'sha1'),
-            function checkArticleBySha(hash, callback) {
-              var url = config.apiUrl + '/articles/bySha/' + hash;
-              return checkArticle(url, details.tabId)(callback);
-            },
-            checkDiscussions(details.tabId)
-          ],
-          responseData(details.tabId)
-        );
-      } else if (mimetype === 'text/html') {
-        // check content for hrefs that match the whitelist
+      if (mimetype !== 'application/pdf') {
+        return;
       }
+
+      async.waterfall(
+        [
+          // Since we have no access to the PDF data, we have to fetch it again
+          // and hope it gets served from cache.
+          // TODO come up with something smarter here
+          computeHash(details.url, 'sha1'),
+          function checkArticleBySha(hash, callback) {
+            var url = config.apiUrl + '/articles/bySha/' + hash;
+            return checkArticle(url, details.tabId)(callback);
+          },
+          checkDiscussions(details.tabId)
+        ],
+        responseData(details.tabId)
+        );
     },
     {
       urls: ['*://*/*'],
@@ -291,9 +296,9 @@
         );
       };
 
-      // We would like to check the meta keys 'citation_doi'
-      // and 'dc.identifier'. Since this needs parsing the actual HTML content,
-      // we have to do it in the content script. Have that call back on
+      // We would like to check the meta keys 'citation_doi' and
+      // 'dc.identifier'. Since this needs parsing the actual HTML content, we
+      // have to do it in the content script. Have that call back on
       // searchDoiOnPaperhive where we process the dois.
       chrome.tabs.sendMessage(
         details.tabId,

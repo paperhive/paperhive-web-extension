@@ -2,7 +2,8 @@
   "name": "paperhive-chrome-extension",
   "version": "0.1.0",
   "license": "GPL-3.0",
-  "description": "Chrome extension for PaperHive",
+  "description": "Browser extension for PaperHive",
+  "manifest_version": 2,
   "repository": {
     "type": "git",
     "url": "git@github.com:paperhive/paperhive-chrome-extension.git"
