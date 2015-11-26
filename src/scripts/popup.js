@@ -1,8 +1,3 @@
-/**
- * @license PaperHive Chrome Extension v0.0.3
- * (c) 2015 Nico Schlömer <nico@paperhive.org>
- * License: GPL-3
- */
 'use strict';
 
 (() => {
