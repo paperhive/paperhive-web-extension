@@ -9,6 +9,7 @@
     "url": "git@github.com:paperhive/paperhive-chrome-extension.git"
   },
   "dependencies": {
+    "co": "4.6.0",
     "paperhive-sources": "0.0.2"
   },
   "devDependencies": {

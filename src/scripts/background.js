@@ -6,12 +6,13 @@
 'use strict';
 
 (() => {
+  const buffer = require('buffer');
+  const co = require('co');
   const crypto = require('crypto');
-  const async = require('async');
   const config = require('../../config.json');
-  const _ = require('lodash');
 
   const sources = require('paperhive-sources');
+
   // https://developer.chrome.com/extensions/events#filtered
   const urlFilter = [];
   sources.hostnames.forEach((hostname) => {
@@ -32,92 +33,60 @@
     });
   };
 
-  const checkArticle = (url, tabId) => {
-    return function cb(callback) {
-      fetch(url).then((response) => {
-        if (response.ok) {
-          setColorIcon(tabId);
-          response.json().then((json) => {
-            // set tab data for communication with the popup script
-            if (!(tabId in articleData)) {
-              articleData[tabId] = {};
-            }
-            // articleData[tabId].article = _.cloneDeep(json);
-            articleData[tabId].article = json;
-            return callback(null, json);
-          });
-        } else {
-          return callback(null, null);
-        }
-      }).catch((err) => {
-        console.error(err.message);
-        return callback('Unexpected error when fetching ' + url);
-      });
-    };
-  };
+  const checkArticle = co.wrap(function* main(url, tabId) {
+    const response = yield fetch(url);
+    if (!response.ok) {
+      throw Error('fetch unsuccessful');
+    }
+    setColorIcon(tabId);
+    const json = yield response.json();
+    // set tab data for communication with the popup script
+    if (!(tabId in articleData)) {
+      articleData[tabId] = {};
+    }
+    articleData[tabId].article = json;
+    return json;
+  });
 
   // The only difference with checkArticle is that the returned JSON object is
   // an array here.
   // Once we hace article revisions working in the backend, we expect to fetch
   // a meta article in all cases, so these two functions can be merged again.
-  const checkArticleByDoi = (url, tabId) => {
-    return function cb(callback) {
-      fetch(url).then((response) => {
-        if (response.ok) {
-          setColorIcon(tabId);
-          response.json().then((json) => {
-            // set tab data for communication with the popup script
-            if (!(tabId in articleData)) {
-              articleData[tabId] = {};
-            }
-            articleData[tabId].article = json[0];
-            return callback(null, json);
-          });
-        } else {
-          return callback(null, null);
-        }
-      }).catch((err) => {
-        console.error(err.message);
-        return callback('Unexpected error when fetching ' + url);
-      });
-    };
-  };
+  const checkArticleByDoi = co.wrap(function* main(url, tabId) {
+    const response = yield fetch(url);
+    if (!response.ok) {
+      throw Error('fetch unsuccessful');
+    }
+    setColorIcon(tabId);
+    const json = yield response.json();
+    // set tab data for communication with the popup script
+    if (!(tabId in articleData)) {
+      articleData[tabId] = {};
+    }
+    articleData[tabId].article = json[0];
+    return json[0];
+  });
 
-  const checkDiscussions = (tabId) => {
-    return function cb(article, callback) {
-      if (article && article._id) {
-        // fetch discussions
-        const url = config.apiUrl +
-          '/articles/' + article._id + '/discussions/';
-        fetch(url).then((response) => {
-          response.json().then((discussions) => {
-            // set icon
-            if (discussions && discussions.length > 0) {
-              // chrome.browserAction.setBadgeBackgroundColor([255, 0, 0, 255]);
-              let badge;
-              if (discussions.length < 1000) {
-                badge = discussions.length.toString();
-              } else {
-                badge = '999+';
-              }
-              chrome.browserAction.setBadgeText({
-                text: badge,
-                tabId: tabId,
-              });
-            }
-            // set data
-            articleData[tabId].discussions = discussions;
-            return callback(null, discussions);
-          });
-        }).catch((err) => {
-          console.error(err.message);
-          return callback('Unexpected error when fetching ' + url);
-        });
-      } else {
-        return callback(null);
-      }
-    };
-  };
+  const checkDiscussions = co.wrap(function* main(article, tabId) {
+    if (!article || !article._id) {
+      return;
+    }
+    // fetch discussions
+    const url = config.apiUrl + '/articles/' + article._id + '/discussions/';
+    const response = yield fetch(url);
+    const discussions = yield response.json();
+    // set icon
+    if (discussions && discussions.length > 0) {
+      // chrome.browserAction.setBadgeBackgroundColor([255, 0, 0, 255]);
+      chrome.browserAction.setBadgeText({
+        text: discussions.length < 1000 ?
+          discussions.length.toString() : '999+',
+        tabId: tabId,
+      });
+    }
+    // set data
+    articleData[tabId].discussions = discussions;
+  });
 
   const responseData = (tabId) => {
     return function cb(err) {
@@ -169,18 +138,23 @@
   // little bit later, namely at onCommitted.
   chrome.webNavigation.onCommitted.addListener(
     (details) => {
-      if (details.frameId !== 0) {
-        // don't do anything if we're not in the main frame
-        return;
-      }
-      const url = config.apiUrl + '/articles/sources?handle=' + details.url;
-      async.waterfall(
-        [
-          checkArticle(url, details.tabId),
-          checkDiscussions(details.tabId),
-        ],
-        responseData(details.tabId)
-      );
+      const f = co.wrap(function* chain(dets) {
+        if (dets.frameId !== 0) {
+          // don't do anything if we're not in the main frame
+          return;
+        }
+        const url = config.apiUrl + '/articles/sources?handle=' + dets.url;
+        const article = yield checkArticle(url, details.tabId);
+        yield checkDiscussions(article, details.tabId);
+        responseData(details.tabId);
+      });
+
+      f(details)
+      .then((value) => {
+        console.log(value);
+      }, (err) => {
+        console.error(err.stack);
+      });
     },
     {
       url: urlFilter,
@@ -188,28 +162,14 @@
     }
   );
 
-  const computeHash = (url, hashType) => {
-    return function cb(callback) {
-      fetch(url).then((response) => {
-        return response.blob();
-      }).then((data) => {
-        // read the blob data, cf.
-        // <https://developer.mozilla.org/en/docs/Web/API/FileReader>
-        const a = new FileReader();
-        a.readAsBinaryString(data);
-        a.onloadend = () => {
-          const hash = crypto.createHash(hashType);
-          hash.update(a.result, 'binary');
-          return callback(null, hash.digest('hex'));
-        };
-      }).catch((err) => {
-        console.error(err.message);
-        return callback(
-          'Unexpected error when fetching ' + url
-        );
-      });
-    };
-  };
+  const computeHash = co.wrap(function* main(url, hashType) {
+    const response = yield fetch(url);
+    const arrayBuffer = yield response.arrayBuffer();
+    const buf = new Uint8Array(arrayBuffer);
+    const hash = crypto.createHash(hashType);
+    hash.update(buf, 'binary');
+    return hash.digest('hex');
+  });
 
   // TODO
   // Check <http://stackoverflow.com/a/27771671/353337> for a complete rundown
@@ -221,31 +181,36 @@
   // <https://code.google.com/p/chromium/issues/detail?id=481411>.
   chrome.webRequest.onCompleted.addListener(
     (details) => {
-      if (details.frameId !== 0) {
-        // don't do anything if we're not in the main frame
-        return;
-      }
+      const f = co.wrap(function* main() {
+        if (details.frameId !== 0) {
+          // don't do anything if we're not in the main frame
+          return;
+        }
 
-      const header = extractHeader(details.responseHeaders, 'content-type');
-      const mimetype = header && header.value.split(';', 1)[0];
-      if (mimetype !== 'application/pdf') {
-        return;
-      }
+        const header = extractHeader(details.responseHeaders, 'content-type');
+        const mimetype = header && header.value.split(';', 1)[0];
+        if (mimetype !== 'application/pdf') {
+          return;
+        }
 
-      async.waterfall(
-        [
-          // Since we have no access to the PDF data, we have to fetch it again
-          // and hope it gets served from cache.
-          // TODO come up with something smarter here
-          computeHash(details.url, 'sha1'),
-          function checkArticleBySha(hash, callback) {
-            const url = config.apiUrl + '/articles/bySha/' + hash;
-            return checkArticle(url, details.tabId)(callback);
-          },
-          checkDiscussions(details.tabId),
-        ],
-        responseData(details.tabId)
-        );
+        const hash = yield computeHash(details.url, 'sha1');
+        console.log('lolhash', hash);
+
+        // Since we have no access to the PDF data, we have to fetch it again
+        // and hope it gets served from cache.
+        // TODO come up with something smarter here
+        const url = config.apiUrl + '/articles/bySha/' + hash;
+        const article = yield checkArticle(url, details.tabId);
+        yield checkDiscussions(article, details.tabId);
+        responseData(details.tabId);
+      });
+
+      f()
+      .then((value) => {
+        console.log(value);
+      }, (err) => {
+        console.error(err.stack);
+      });
     },
     {
       urls: ['*://*/*'],
@@ -288,24 +253,20 @@
         return;
       }
 
-      const searchDoiOnPaperhive = (doi) => {
+      const searchDoiOnPaperhive = co.wrap(function* search(doi) {
         if (!doi) {return;}
         const url = config.apiUrl +
           '/articles/byDoi/' + encodeURIComponent(doi);
-        async.waterfall(
-          [
-            checkArticleByDoi(url, details.tabId),
-            checkDiscussions(details.tabId),
-          ],
-          responseData(details.tabId)
-        );
-      };
+        const article = yield checkArticleByDoi(url, details.tabId);
+        yield checkDiscussions(article, details.tabId);
+        responseData(details.tabId);
+      });
 
       // We would like to check the meta keys 'citation_doi' and
       // 'dc.identifier'. Since this needs parsing the actual HTML content, we
       // have to do it in the content script. Have that call back on
       // searchDoiOnPaperhive where we process the dois.
-      if (articleData[details.tabId].article) {
+      if (articleData[details.tabId] && articleData[details.tabId].article) {
         // don't take action if we already have data
         return;
       }
