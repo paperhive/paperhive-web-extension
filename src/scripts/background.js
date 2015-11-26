@@ -132,25 +132,16 @@
   // setColorIcon would sometimes have no effect. As a workaround, just draw a
   // little bit later, namely at onCommitted.
   chrome.webNavigation.onCommitted.addListener(
-    (details) => {
-      const f = co.wrap(function* chain(dets) {
-        if (dets.frameId !== 0) {
-          // don't do anything if we're not in the main frame
-          return;
-        }
-        const url = config.apiUrl + '/articles/sources?handle=' + dets.url;
-        const article = yield checkArticle(url, details.tabId);
-        yield checkDiscussions(article, details.tabId);
-        responseData(details.tabId);
-      });
-
-      f(details)
-      .then((value) => {
-        console.log(value);
-      }, (err) => {
-        console.error(err.stack);
-      });
-    },
+    co.wrap(function* chain(details) {
+      if (details.frameId !== 0) {
+        // don't do anything if we're not in the main frame
+        return;
+      }
+      const url = config.apiUrl + '/articles/sources?handle=' + details.url;
+      const article = yield checkArticle(url, details.tabId);
+      yield checkDiscussions(article, details.tabId);
+      responseData(details.tabId);
+    }),
     {
       url: urlFilter,
       types: ['main_frame'],
@@ -175,38 +166,28 @@
   // it's served from cache, it does. See
   // <https://code.google.com/p/chromium/issues/detail?id=481411>.
   chrome.webRequest.onCompleted.addListener(
-    (details) => {
-      const f = co.wrap(function* main() {
-        if (details.frameId !== 0) {
-          // don't do anything if we're not in the main frame
-          return;
-        }
+    co.wrap(function* main(details) {
+      if (details.frameId !== 0) {
+        // don't do anything if we're not in the main frame
+        return;
+      }
 
-        const header = extractHeader(details.responseHeaders, 'content-type');
-        const mimetype = header && header.value.split(';', 1)[0];
-        if (mimetype !== 'application/pdf') {
-          return;
-        }
+      const header = extractHeader(details.responseHeaders, 'content-type');
+      const mimetype = header && header.value.split(';', 1)[0];
+      if (mimetype !== 'application/pdf') {
+        return;
+      }
 
-        const hash = yield computeHash(details.url, 'sha1');
-        console.log('lolhash', hash);
+      const hash = yield computeHash(details.url, 'sha1');
 
-        // Since we have no access to the PDF data, we have to fetch it again
-        // and hope it gets served from cache.
-        // TODO come up with something smarter here
-        const url = config.apiUrl + '/articles/bySha/' + hash;
-        const article = yield checkArticle(url, details.tabId);
-        yield checkDiscussions(article, details.tabId);
-        responseData(details.tabId);
-      });
-
-      f()
-      .then((value) => {
-        console.log(value);
-      }, (err) => {
-        console.error(err.stack);
-      });
-    },
+      // Since we have no access to the PDF data, we have to fetch it again
+      // and hope it gets served from cache.
+      // TODO come up with something smarter here
+      const url = config.apiUrl + '/articles/bySha/' + hash;
+      const article = yield checkArticle(url, details.tabId);
+      yield checkDiscussions(article, details.tabId);
+      responseData(details.tabId);
+    }),
     {
       urls: ['*://*/*'],
       types: ['main_frame'],
