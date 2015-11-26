@@ -1,19 +1,22 @@
 {
   "name": "paperhive-chrome-extension",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "license": "GPL-3.0",
-  "description": "Chrome extension for PaperHive",
+  "description": "Browser extension for PaperHive",
+  "manifest_version": 2,
   "repository": {
     "type": "git",
     "url": "git@github.com:paperhive/paperhive-chrome-extension.git"
   },
   "dependencies": {
+    "co": "4.6.0",
     "paperhive-sources": "0.0.2"
   },
   "devDependencies": {
     "browserify": "^12.0.1",
     "browserify-shim": "^3.8.11",
     "del": "^2.0.2",
+    "eslint-config-airbnb": "^1.0.0",
     "gulp": "^3.9.0",
     "gulp-eslint": "^1.1.0",
     "gulp-htmlhint": "^0.3.0",
