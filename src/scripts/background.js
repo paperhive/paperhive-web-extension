@@ -40,6 +40,7 @@
       articleData[tabId] = {};
     }
     articleData[tabId].article = json;
+    articleData[tabId].discussions = undefined;
     return json;
   });
 
@@ -59,6 +60,7 @@
       articleData[tabId] = {};
     }
     articleData[tabId].article = json[0];
+    articleData[tabId].discussions = undefined;
     return json[0];
   });
 
@@ -148,6 +150,7 @@
     }
   );
 
+  // http://stackoverflow.com/a/33931307/353337
   const computeHash = co.wrap(function* main(url, hashType) {
     const response = yield fetch(url);
     const arrayBuffer = yield response.arrayBuffer();
@@ -201,22 +204,22 @@
       // The tab ID is either in the sender (if a content script sent the
       // request) or in the request.activeTabId (if popup.js sent the request).
       const tabId = request.activeTabId || sender.tab.id;
-      if (tabId) {
-        if (request.getArticleData) {
-          if (articleData[tabId].article) {
-            // send immediately since the tab is fully loaded
-            sendResponse(articleData[tabId]);
-          } else {
-            // send later, cf.
-            // <http://stackoverflow.com/a/30020271/353337>
-            responseSender[tabId] = sendResponse;
-            // returning `true` to indicate that we intend to send later, cf.
-            // <https://developer.chrome.com/extensions/runtime#event-onMessage>
-            return true;
-          }
-        }
-      } else {
+      if (!tabId) {
         console.error('Invalid tab ID.');
+      }
+
+      if (request.getArticleData) {
+        if (articleData[tabId].article) {
+          // send immediately since the tab is fully loaded
+          sendResponse(articleData[tabId]);
+        } else {
+          // send later, cf.
+          // <http://stackoverflow.com/a/30020271/353337>
+          responseSender[tabId] = sendResponse;
+          // returning `true` to indicate that we intend to send later, cf.
+          // <https://developer.chrome.com/extensions/runtime#event-onMessage>
+          return true;
+        }
       }
     }
   );
