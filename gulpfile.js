@@ -8,7 +8,6 @@ var source = require('vinyl-source-stream');
 var buffer = require('vinyl-buffer');
 var _ = require('lodash');
 var streamify = require('gulp-streamify');
-var uglify = require('gulp-uglify');
 var htmlmin = require('gulp-htmlmin');
 var minifyCSS = require('gulp-minify-css');
 var imagemin = require('gulp-imagemin');
@@ -60,9 +59,6 @@ function js(watch, file) {
       .on('error', handleError)
       .pipe(source(file))
       .pipe(buffer())
-      .pipe(debug ? gutil.noop() : streamify(uglify({
-        preserveComments: 'some'
-      })))
       .pipe(gulp.dest('build/scripts/'));
   }
   bundler.on('update', rebundle);
