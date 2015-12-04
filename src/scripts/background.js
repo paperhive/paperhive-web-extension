@@ -11,7 +11,7 @@
   // https://developer.chrome.com/extensions/events#filtered
   const urlFilter = [];
   sources.hostnames.forEach((hostname) => {
-    urlFilter.push({hostSuffix: hostname});
+    urlFilter.push({ hostSuffix: hostname });
   });
 
   const articleData = {};
@@ -251,7 +251,7 @@
       }
       chrome.tabs.sendMessage(
         details.tabId,
-        {keys: ['citation_doi', 'DC.Identifier']},
+        { keys: ['citation_doi', 'DC.Identifier'] },
         searchDoiOnPaperhive
       );
     },
