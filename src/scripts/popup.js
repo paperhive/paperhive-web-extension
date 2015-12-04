@@ -17,7 +17,7 @@
         if (url) {
           $scope.submitting = true;
           $http.post(config.apiUrl + '/articles/sources', undefined, {
-            params: {handle: url},
+            params: { xhandle: url },
           })
           .success((article) => {
             $scope.submitting = false;
@@ -56,7 +56,10 @@
           });
           // get article data
           chrome.runtime.sendMessage(
-            {getArticleData: true, activeTabId: tabs[0].id},
+            {
+              getArticleData: true,
+              activeTabId: tabs[0].id,
+            },
             (response) => {
               // same as above
               $scope.$apply(() => {
