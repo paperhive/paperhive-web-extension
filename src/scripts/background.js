@@ -24,7 +24,7 @@
         '19': 'images/icon-19.png',
         '38': 'images/icon-38.png',
       },
-      tabId: tabId,
+      tabId,
     });
   };
 
@@ -78,7 +78,7 @@
       chrome.browserAction.setBadgeText({
         text: discussions.length < 1000 ?
           discussions.length.toString() : '999+',
-        tabId: tabId,
+        tabId,
       });
     }
     // set data
