@@ -1,3 +1,5 @@
+// needed for assignment to $scope:
+/* eslint no-param-reassign: 0 */
 'use strict';
 
 (() => {
