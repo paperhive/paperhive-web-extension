@@ -21,8 +21,8 @@
   const setColorIcon = (tabId) => {
     chrome.browserAction.setIcon({
       path: {
-        '19': 'images/icon-19.png',
-        '38': 'images/icon-38.png',
+        19: 'images/icon-19.png',
+        38: 'images/icon-38.png',
       },
       tabId,
     });
