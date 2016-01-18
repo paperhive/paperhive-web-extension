@@ -4,9 +4,10 @@
   const buffer = require('buffer');
   const co = require('co');
   const crypto = require('crypto');
-  const config = require('../../config.json');
-
+  const _ = require('lodash');
   const sources = require('paperhive-sources');
+
+  const config = require('../../config.json');
 
   // https://developer.chrome.com/extensions/events#filtered
   const urlFilter = [];
@@ -14,7 +15,7 @@
     urlFilter.push({ hostSuffix: hostname });
   });
 
-  const articleData = {};
+  const documentData = {};
   const pageUrls = {};
   const responseSender = {};
 
@@ -28,49 +29,51 @@
     });
   };
 
-  const checkArticle = co.wrap(function* main(url, tabId) {
-    const response = yield fetch(url);
-    if (!response.ok) {
-      throw Error('fetch unsuccessful');
+  const getDocument = co.wrap(function* main(url, tabId) {
+    let response = yield fetch(url);
+    if (response.status === 404) {
+      response = yield fetch(url, { method: 'POST' });
+      if (!response.ok) {
+        throw Error('document POST unsuccessful');
+      }
+    } else if (!response.ok) {
+      throw Error('document GET unsuccessful');
     }
+    const thisRevision = yield response.json();
+
     setColorIcon(tabId);
-    const json = yield response.json();
-    // set tab data for communication with the popup script
-    if (!(tabId in articleData)) {
-      articleData[tabId] = {};
+
+    // Now get all revisions of the document; they come in chronological order
+    response = yield fetch(
+      config.apiUrl + '/documents/' + thisRevision.id + '/revisions/'
+    );
+    if (!response.ok) {
+      throw Error('document GET unsuccessful');
     }
-    articleData[tabId].article = json;
-    articleData[tabId].discussions = undefined;
-    return json;
+    const allRevisions = yield response.json();
+
+    // set tab data for communication with the popup script
+    documentData[tabId] = {
+      revisions: allRevisions,
+      // store a bunch of indices along with allRevisions
+      indices: {
+        thisRevision: _.findLastIndex(allRevisions, { revision: thisRevision.revision }),
+        newestOa: _.findLastIndex(allRevisions, { openAccess: true }),
+      },
+    };
+    return thisRevision.id;
   });
 
-  // The only difference with checkArticle is that the returned JSON object is
-  // an array here.
-  // Once we hace article revisions working in the backend, we expect to fetch
-  // a meta article in all cases, so these two functions can be merged again.
-  const checkArticleByDoi = co.wrap(function* main(url, tabId) {
-    const response = yield fetch(url);
-    if (!response.ok) {
-      throw Error('fetch unsuccessful');
-    }
-    setColorIcon(tabId);
-    const json = yield response.json();
-    // set tab data for communication with the popup script
-    if (!(tabId in articleData)) {
-      articleData[tabId] = {};
-    }
-    articleData[tabId].article = json[0];
-    articleData[tabId].discussions = undefined;
-    return json[0];
-  });
-
-  const checkDiscussions = co.wrap(function* main(article, tabId) {
-    if (!article || !article._id) {
+  const getDiscussions = co.wrap(function* main(documentId, tabId) {
+    if (!documentId) {
       return;
     }
     // fetch discussions
-    const url = config.apiUrl + '/articles/' + article._id + '/discussions/';
+    const url = config.apiUrl + '/documents/' + documentId + '/discussions/';
     const response = yield fetch(url);
+    if (!response.ok) {
+      throw Error('discussion GET unsuccessful');
+    }
     const discussions = yield response.json();
     // set icon
     if (discussions && discussions.length > 0) {
@@ -82,7 +85,7 @@
       });
     }
     // set data
-    articleData[tabId].discussions = discussions;
+    documentData[tabId].discussions = discussions;
   });
 
   const responseData = (tabId) => {
@@ -96,7 +99,7 @@
       // Fulfill the promise and remove the sender afterwards.
       if (responseSender[tabId]) {
         // send the data
-        responseSender[tabId](articleData[tabId]);
+        responseSender[tabId](documentData[tabId]);
         // remove the dangling request
         responseSender[tabId] = null;
       }
@@ -117,14 +120,14 @@
   // chrome.tabs.onCreated.addListener(
   //   function(tab) {
   //     console.log('tabs.onCreated ' + tab.id);
-  //     articleData[tab.id] = {};
+  //     documentData[tab.id] = {};
   //   }
   // );
 
   // clean up after tab close
   chrome.tabs.onRemoved.addListener(
     (tabId) => {
-      articleData[tabId] = undefined;
+      documentData[tabId] = undefined;
       pageUrls[tabId] = [];
     }
   );
@@ -139,9 +142,16 @@
         // don't do anything if we're not in the main frame
         return;
       }
-      const url = config.apiUrl + '/articles/sources?handle=' + details.url;
-      const article = yield checkArticle(url, details.tabId);
-      yield checkDiscussions(article, details.tabId);
+      // Check if the URL indeed represents a valid remote; the urlFilter is a
+      // preliminary test. Perhaps we can scratch this one here.
+      const remote = sources.parseUrl(details.url);
+      if (!remote) {
+        console.log(details.url + ' is no valid URL');
+        return;
+      }
+      const url = config.apiUrl + '/documents/url?q=' + details.url;
+      const documentId = yield getDocument(url, details.tabId);
+      yield getDiscussions(documentId, details.tabId);
       responseData(details.tabId);
     }),
     {
@@ -153,6 +163,9 @@
   // http://stackoverflow.com/a/33931307/353337
   const computeHash = co.wrap(function* main(url, hashType) {
     const response = yield fetch(url);
+    if (!response.ok) {
+      throw Error('pdf GET unsuccessful');
+    }
     const arrayBuffer = yield response.arrayBuffer();
     const buf = new Uint8Array(arrayBuffer);
     const hash = crypto.createHash(hashType);
@@ -186,9 +199,9 @@
       // Since we have no access to the PDF data, we have to fetch it again
       // and hope it gets served from cache.
       // TODO come up with something smarter here
-      const url = config.apiUrl + '/articles/bySha/' + hash;
-      const article = yield checkArticle(url, details.tabId);
-      yield checkDiscussions(article, details.tabId);
+      const url = config.apiUrl + '/documents/bySha/' + hash;
+      const documentId = yield getDocument(url, details.tabId);
+      yield getDiscussions(documentId, details.tabId);
       responseData(details.tabId);
     }),
     {
@@ -208,10 +221,10 @@
         console.error('Invalid tab ID.');
       }
 
-      if (request.getArticleData) {
-        if (articleData[tabId].article) {
+      if (request.getDocumentData) {
+        if (documentData[tabId].revisions) {
           // send immediately since the tab is fully loaded
-          sendResponse(articleData[tabId]);
+          sendResponse(documentData[tabId]);
         } else {
           // send later, cf.
           // <http://stackoverflow.com/a/30020271/353337>
@@ -234,10 +247,9 @@
 
       const searchDoiOnPaperhive = co.wrap(function* search(doi) {
         if (!doi) {return;}
-        const url = config.apiUrl +
-          '/articles/byDoi/' + encodeURIComponent(doi);
-        const article = yield checkArticleByDoi(url, details.tabId);
-        yield checkDiscussions(article, details.tabId);
+        const url = config.apiUrl + '/documents?doi=' + encodeURIComponent(doi);
+        const documentId = yield getDocument(url, details.tabId);
+        yield getDiscussions(documentId, details.tabId);
         responseData(details.tabId);
       });
 
@@ -245,7 +257,7 @@
       // 'dc.identifier'. Since this needs parsing the actual HTML content, we
       // have to do it in the content script. Have that call back on
       // searchDoiOnPaperhive where we process the dois.
-      if (articleData[details.tabId] && articleData[details.tabId].article) {
+      if (documentData[details.tabId] && documentData[details.tabId].revisions) {
         // don't take action if we already have data
         return;
       }

@@ -23,42 +23,52 @@
     </header>
 
     <main>
-    <div ng-if="!article.meta" class="well">
+    <div ng-if="!document.revisions" class="well">
       This page is not yet available for discussion on PaperHive.
       Do you think it would be a worthwhile addition?
     </div>
 
-    <div ng-if="article.meta" class="panel panel-default">
+    <div ng-if="document.revisions[document.indices.thisRevision]" class="panel panel-default">
       <div class="panel-body">
         <h4>
-          <a ng-if="article.meta._id"
+          <a ng-if="document.revisions[document.indices.thisRevision]"
              target="_blank"
-             ng-href="{{frontendUrl}}/articles/{{article.meta._id}}">
-            {{article.meta.title}}</a>
-          <span ng-if="!article.meta._id">
-            {{article.meta.title}}
+             ng-href="{{frontendUrl}}/documents/{{document.revisions[document.indices.thisRevision].id}}?revision={{document.revisions[document.indices.thisRevision].revision}}">
+            {{document.revisions[document.indices.thisRevision].title}}</a>
+          <span ng-if="!document.revisions[document.indices.thisRevision]">
+            {{document.revisions[document.indices.thisRevision].title}}
           </span>
         </h4>
         <div>
-          <span ng-repeat="author in article.meta.authors">
-            {{author}}{{$last ? '' :', '}}
+          <span ng-repeat="author in document.revisions[document.indices.thisRevision].authors">
+            {{author.name}}{{$last ? '' : ', '}}
           </span>
         </div>
       </div>
     </div>
 
-    <div ng-if="article.discussions && article.discussions.length > 0"
+    <div ng-if="document.indices.thisRevision < document.revisions.length - 1"
+      class="alert alert-warning"
+      role="alert">
+      There is a more recent version of the article; <strong>
+      {{document.revisions[document.revisions.length - 1].journalName}},
+      volume {{document.revisions[document.revisions.length - 1].volume}},
+      issue {{document.revisions[document.revisions.length - 1].issue}}.
+      </strong>
+    </div>
+
+    <div ng-if="document.discussions && document.discussions.length > 0"
       class="panel panel-default"
       >
       <div class="panel-heading">
         <strong>
-          <i class="fa fa-comment"></i> {{article.discussions.length}} open discussions
+          <i class="fa fa-comment"></i> {{document.discussions.length}} open discussions
         </strong>
       </div>
       <ul class="list-group">
-        <li class="list-group-item" ng-repeat="discussion in article.discussions">
+        <li class="list-group-item" ng-repeat="discussion in document.discussions">
           <a target="_blank"
-             ng-href="{{frontendUrl}}/articles/{{article.meta._id}}/discussions/{{discussion.index}}">
+             ng-href="{{frontendUrl}}/documents/{{document.meta._id}}/discussions/{{discussion.index}}">
              <span
              ng-if="discussion.replies.length > 0"
              class="pull-right ph-discussion-replies-counter"
@@ -67,7 +77,7 @@
              </span></a>
              <div>
                <a target="_blank"
-                 ng-href="{{frontendUrl}}/articles/{{article.meta._id}}/discussions/{{discussion.index}}">
+                 ng-href="{{frontendUrl}}/documents/{{document.meta._id}}/discussions/{{discussion.index}}">
                  {{discussion.originalAnnotation.title}}</a>
              </div>
              <span class="ph-discussion-subtitle">
@@ -84,14 +94,14 @@
     </main>
 
     <footer class="ph-footer">
-      <a ng-if="article.meta && article.meta._id"
+      <a ng-if="document.meta && document.meta._id"
          id="link" target="_blank" role="button" class="btn btn-primary"
-         ng-href="{{frontendUrl}}/articles/{{article.meta._id}}"
+         ng-href="{{frontendUrl}}/documents/{{document.meta._id}}"
          >
         Open in PaperHive
       </a>
 
-      <button ng-if="article.meta && !article.meta._id"
+      <button ng-if="document.meta && !document.meta._id"
          type="submit"
          ng-click="submitApproved(tabUrl)"
          class="btn btn-primary"
@@ -102,7 +112,7 @@
          Open in PaperHive
       </button>
 
-      <a ng-if="!article.meta"
+      <a ng-if="!document.meta"
          type="link"
          class="btn btn-primary"
          target="_blank"
@@ -110,7 +120,7 @@
 mailto:info@paperhive.org
 ?subject=Article suggestion
 &body=Hi,%0D%0A%0D%0A
-I found this article on%0D%0A
+I found this document on%0D%0A
 %0D%0A
   {{tabUrl}}%0D%0A
 %0D%0A
@@ -120,7 +130,7 @@ Thanks!"
          Yes!
       </a>
 
-      <!--span ng-if="!article.meta && !isWhitelistedHost">
+      <!--span ng-if="!document.meta && !isWhitelistedHost">
         PaperHive only deals with PDFs from whitelisted sources. If you like to
         have more sources included, give us some <a
             ng-href="{{frontendUrl}}/contact" target="_blank">feedback</a>!

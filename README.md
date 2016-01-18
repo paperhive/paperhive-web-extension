@@ -22,7 +22,7 @@ the`./build/` directory.
   It will be zipped as `./paperhive.zip`.
 * Create Git tag
   ```
-  git tag -a v0.1.0
+  git tag v0.1.0
   git push --tags
   ```
 

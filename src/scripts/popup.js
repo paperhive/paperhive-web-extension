@@ -13,18 +13,18 @@
     'config', '$http', '$scope',
     (config, $http, $scope) => {
       $scope.frontendUrl = config.frontendUrl;
-      $scope.article = {};
+      $scope.document = {};
 
       $scope.submitApproved = (url) => {
         if (url) {
           $scope.submitting = true;
-          $http.post(config.apiUrl + '/articles/sources', undefined, {
-            params: { xhandle: url },
+          $http.post(config.apiUrl + '/documents/url/', undefined, {
+            q: { xhandle: url },
           })
-          .success((article) => {
+          .success((document) => {
             $scope.submitting = false;
             chrome.tabs.create({
-              url: config.frontendUrl + '/articles/' + article._id,
+              url: config.frontendUrl + '/documents/' + document.id,
             });
           })
           .error((data) => {
@@ -33,7 +33,7 @@
             if (data && data.message) {
               message = data.message;
             } else {
-              message = 'could not add article (unknown reason)';
+              message = 'could not add document (unknown reason)';
             }
             // notificationService.notifications.push({
             //   type: 'error',
@@ -56,17 +56,16 @@
           $scope.$apply(() => {
             $scope.tabUrl = tabs[0].url;
           });
-          // get article data
+          // get document data
           chrome.runtime.sendMessage(
             {
-              getArticleData: true,
+              getDocumentData: true,
               activeTabId: tabs[0].id,
             },
             (response) => {
               // same as above
               $scope.$apply(() => {
-                $scope.article.meta = response.article;
-                $scope.article.discussions = response.discussions;
+                $scope.document = response;
               });
             }
           );
