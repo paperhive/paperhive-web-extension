@@ -30,6 +30,16 @@
     });
   };
 
+  const setOaIcon = (tabId) => {
+    chrome.browserAction.setIcon({
+      path: {
+        19: 'images/icon-oa-19.png',
+        38: 'images/icon-oa-38.png',
+      },
+      tabId,
+    });
+  };
+
   const getDocument = co.wrap(function* main(query, tabId) {
     // build query
     const q = _.clone(query);
@@ -77,6 +87,10 @@
         newestOa: _.findLastIndex(all.revisions, { openAccess: true }),
       },
     };
+
+    if (!thisRevision.openAccess && documentData[tabId].indices.newestOa > -1) {
+      setOaIcon(tabId);
+    }
 
     return thisRevision.id;
   });
