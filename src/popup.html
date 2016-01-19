@@ -47,10 +47,33 @@
       </div>
     </div>
 
+    <div ng-if="!document.revisions[document.indices.thisRevision].openAccess
+         && document.indices.newestOa > 0"
+      class="alert alert-warning"
+      role="alert">
+      There is an <strong>open-access</strong> version of this article
+      available on
+      {{document.revisions[document.indices.newestOa].journalName}}
+      <span ng-if="document.revisions[document.indices.newestOa].volume">
+      , volume {{document.revisions[document.indices.newestOa].volume}}
+      </span>
+      <span ng-if="document.revisions[document.indices.newestOa].issue">
+       , issue {{document.revisions[document.indices.newestOa].issue}}
+      </span>
+      <span ng-if="document.revisions[document.indices.newestOa].publishedAt">
+       (published {{document.revisions[document.indices.newestOa].publishedAt | date}}).
+      </span>
+      </strong>
+    </div>
+
     <div ng-if="document.indices.thisRevision < document.revisions.length - 1"
       class="alert alert-warning"
       role="alert">
-      There is a more recent version of this article in <strong>
+      There is a more recent
+      <strong ng-if="document.revisions[document.revisions.length - 1].openAccess">
+        open-access
+      </strong>
+      version of this article in <strong>
       {{document.revisions[document.revisions.length - 1].journalName}}
       <span ng-if="document.revisions[document.revisions.length - 1].volume">
       , volume {{document.revisions[document.revisions.length - 1].volume}}
