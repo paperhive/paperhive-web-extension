@@ -10,7 +10,8 @@
   },
   "dependencies": {
     "co": "4.6.0",
-    "paperhive-sources": "1.0.0"
+    "paperhive-sources": "1.0.0",
+    "qs": "^6.0.2"
   },
   "devDependencies": {
     "browserify": "^12.0.1",

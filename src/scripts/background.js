@@ -6,6 +6,7 @@
   const crypto = require('crypto');
   const _ = require('lodash');
   const sources = require('paperhive-sources');
+  const qs = require('qs');
 
   const config = require('../../config.json');
 
@@ -29,17 +30,32 @@
     });
   };
 
-  const getDocument = co.wrap(function* main(url, tabId) {
-    let response = yield fetch(url);
-    if (response.status === 404) {
-      response = yield fetch(url, { method: 'POST' });
-      if (!response.ok) {
-        throw Error('document POST unsuccessful');
-      }
-    } else if (!response.ok) {
+  const getDocument = co.wrap(function* main(query, tabId) {
+    // build query
+    const q = _.clone(query);
+    // Get only the most recent revision matching the query
+    q.sortBy = '-publishedAt';
+    q.limit = 1;
+    let response = yield fetch(config.apiUrl + '/documents?' + qs.stringify(q));
+    if (!response.ok) {
       throw Error('document GET unsuccessful');
     }
-    const thisRevision = yield response.json();
+    const res = yield response.json();
+
+    let thisRevision;
+    if (res.documents.length > 0) {
+      thisRevision = res.documents[0];
+    } else {
+      // try to post
+      const postResponse = yield fetch(
+        config.apiUrl + '/documents?' + qs.stringify(query),
+        { method: 'POST' }
+      );
+      if (!postResponse.ok) {
+        throw Error('document POST unsuccessful');
+      }
+      thisRevision = yield postResponse.json();
+    }
 
     setColorIcon(tabId);
 
@@ -50,17 +66,18 @@
     if (!response.ok) {
       throw Error('document GET unsuccessful');
     }
-    const allRevisions = yield response.json();
+    const all = yield response.json();
 
     // set tab data for communication with the popup script
     documentData[tabId] = {
-      revisions: allRevisions,
+      revisions: all.revisions,
       // store a bunch of indices along with allRevisions
       indices: {
-        thisRevision: _.findLastIndex(allRevisions, { revision: thisRevision.revision }),
-        newestOa: _.findLastIndex(allRevisions, { openAccess: true }),
+        thisRevision: _.findLastIndex(all.revisions, { revision: thisRevision.revision }),
+        newestOa: _.findLastIndex(all.revisions, { openAccess: true }),
       },
     };
+
     return thisRevision.id;
   });
 
@@ -74,18 +91,18 @@
     if (!response.ok) {
       throw Error('discussion GET unsuccessful');
     }
-    const discussions = yield response.json();
+    const res = yield response.json();
     // set icon
-    if (discussions && discussions.length > 0) {
+    if (res.discussions && res.discussions.length > 0) {
       // chrome.browserAction.setBadgeBackgroundColor([255, 0, 0, 255]);
       chrome.browserAction.setBadgeText({
-        text: discussions.length < 1000 ?
-          discussions.length.toString() : '999+',
+        text: res.discussions.length < 1000 ?
+          res.discussions.length.toString() : '999+',
         tabId,
       });
     }
     // set data
-    documentData[tabId].discussions = discussions;
+    documentData[tabId].discussions = res.discussions;
   });
 
   const responseData = (tabId) => {
@@ -149,8 +166,7 @@
         console.log(details.url + ' is no valid URL');
         return;
       }
-      const url = config.apiUrl + '/documents/url?q=' + details.url;
-      const documentId = yield getDocument(url, details.tabId);
+      const documentId = yield getDocument({ url: details.url }, details.tabId);
       yield getDiscussions(documentId, details.tabId);
       responseData(details.tabId);
     }),
@@ -199,8 +215,7 @@
       // Since we have no access to the PDF data, we have to fetch it again
       // and hope it gets served from cache.
       // TODO come up with something smarter here
-      const url = config.apiUrl + '/documents/bySha/' + hash;
-      const documentId = yield getDocument(url, details.tabId);
+      const documentId = yield getDocument({ pdfHash: hash }, details.tabId);
       yield getDiscussions(documentId, details.tabId);
       responseData(details.tabId);
     }),
@@ -247,8 +262,7 @@
 
       const searchDoiOnPaperhive = co.wrap(function* search(doi) {
         if (!doi) {return;}
-        const url = config.apiUrl + '/documents?doi=' + encodeURIComponent(doi);
-        const documentId = yield getDocument(url, details.tabId);
+        const documentId = yield getDocument({ doi }, details.tabId);
         yield getDiscussions(documentId, details.tabId);
         responseData(details.tabId);
       });
