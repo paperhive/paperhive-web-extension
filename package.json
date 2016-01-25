@@ -8,6 +8,18 @@
     "type": "git",
     "url": "git@github.com:paperhive/paperhive-chrome-extension.git"
   },
+  "scripts": {
+    "lint": "npm run eslint && npm run htmlhint",
+    "eslint": "./node_modules/.bin/eslint src/",
+    "htmlhint": "./node_modules/.bin/htmlhint src/",
+    "meta": "mkdir -p build && cp -r src/_locales/ src/manifest.json build/",
+    "images": "mkdir -p build/images && cp src/images/*png build/images && optipng --quiet build/images/*png",
+    "js": "./node_modules/.bin/webpack",
+    "build": "npm run meta && npm run images && npm run js",
+    "zip": "npm run build && zip -r paperhive.zip build/",
+    "watch": "./node_modules/.bin/webpack --progress --colors --watch",
+    "clean": "rm -rf build && rm -f paperhive.zip"
+  },
   "dependencies": {
     "co": "4.6.0",
     "paperhive-sources": "1.0.0",
@@ -41,12 +53,11 @@
   "engines": {
     "node": ">=0.8.0"
   },
-  "browser": {
+  "browser_": {
     "angular": "./bower_components/angular/angular.js",
-    "async": "./bower_components/async/lib/async.js",
     "jquery": "./bower_components/jquery/dist/jquery.js"
   },
-  "browserify-shim": {
+  "browserify-shim_": {
     "angular": {
       "exports": "angular",
       "depends": [

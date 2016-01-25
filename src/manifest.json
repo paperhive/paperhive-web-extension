@@ -10,7 +10,7 @@
   "default_locale": "en",
   "background": {
     "scripts": [
-      "scripts/background.js"
+      "background.js"
     ],
     "persistent": true
   },
@@ -27,7 +27,7 @@
       "matches": ["*://*/*"],
       "css": ["content.css"],
       "js": [
-        "scripts/content.js"
+        "content.js"
       ]
     }
   ],
