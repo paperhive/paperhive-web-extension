@@ -46,7 +46,7 @@ const getDocument = co.wrap(function* main(query, tabId) {
   // Get only the most recent revision matching the query
   q.sortBy = '-publishedAt';
   q.limit = 1;
-  let response = yield fetch(config.apiUrl + '/documents?' + qs.stringify(q));
+  let response = yield fetch(`${config.apiUrl}/documents?${qs.stringify(q)}`);
   if (!response.ok) {
     throw Error('document GET unsuccessful');
   }
@@ -58,7 +58,7 @@ const getDocument = co.wrap(function* main(query, tabId) {
   } else {
     // try to post
     const postResponse = yield fetch(
-      config.apiUrl + '/documents?' + qs.stringify(query),
+      `${config.apiUrl}/documents?${qs.stringify(query)}`,
       { method: 'POST' }
     );
     if (!postResponse.ok) {
@@ -70,9 +70,7 @@ const getDocument = co.wrap(function* main(query, tabId) {
   setColorIcon(tabId);
 
   // Now get all revisions of the document; they come in chronological order
-  response = yield fetch(
-    config.apiUrl + '/documents/' + thisRevision.id + '/revisions/'
-  );
+  response = yield fetch(`${config.apiUrl}/documents/${thisRevision.id}/revisions/`);
   if (!response.ok) {
     throw Error('document GET unsuccessful');
   }
@@ -100,7 +98,7 @@ const getDiscussions = co.wrap(function* main(documentId, tabId) {
     return;
   }
   // fetch discussions
-  const url = config.apiUrl + '/documents/' + documentId + '/discussions/';
+  const url = `${config.apiUrl}/documents/${documentId}/discussions/`;
   const response = yield fetch(url);
   if (!response.ok) {
     throw Error('discussion GET unsuccessful');
@@ -119,22 +117,20 @@ const getDiscussions = co.wrap(function* main(documentId, tabId) {
   documentData[tabId].discussions = res.discussions;
 });
 
-const responseData = (tabId) => {
-  return function cb(err) {
-    if (err) {
-      console.error(err);
-    }
-    // If the user clicks on the extension icon before the data is loaded,
-    // the data communication request is delayed until the data is available.
-    // Namely here! :)
-    // Fulfill the promise and remove the sender afterwards.
-    if (responseSender[tabId]) {
-      // send the data
-      responseSender[tabId](documentData[tabId]);
-      // remove the dangling request
-      responseSender[tabId] = null;
-    }
-  };
+const responseData = (tabId) => (err) => {
+  if (err) {
+    console.error(err);
+  }
+  // If the user clicks on the extension icon before the data is loaded, the
+  // data communication request is delayed until the data is available.  Namely
+  // here! :)
+  // Fulfill the promise and remove the sender afterwards.
+  if (responseSender[tabId]) {
+    // send the data
+    responseSender[tabId](documentData[tabId]);
+    // remove the dangling request
+    responseSender[tabId] = null;
+  }
 };
 
 // from <http://stackoverflow.com/a/21042958/353337>
@@ -177,7 +173,7 @@ chrome.webNavigation.onCommitted.addListener(
     // preliminary test. Perhaps we can scratch this one here.
     const remote = sources.parseUrl(details.url);
     if (!remote) {
-      console.log(details.url + ' is no valid URL');
+      console.log(`${details.url} is no valid URL`);
       return;
     }
     const documentId = yield getDocument({ url: details.url }, details.tabId);

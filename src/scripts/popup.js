@@ -21,13 +21,13 @@ paperhive.controller('PopupCtrl', [
     $scope.submitApproved = (url) => {
       if (url) {
         $scope.submitting = true;
-        $http.post(config.apiUrl + '/documents/url/', undefined, {
+        $http.post(`${config.apiUrl}/documents/url/`, undefined, {
           q: { xhandle: url },
         })
         .success((document) => {
           $scope.submitting = false;
           chrome.tabs.create({
-            url: config.frontendUrl + '/documents/' + document.id,
+            url: `${config.frontendUrl}/documents/${document.id}`,
           });
         })
         .error((data) => {
