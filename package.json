@@ -48,7 +48,6 @@
     "gulp-zip": "^3.0.2",
     "html-loader": "^0.4.0",
     "imagemin-pngquant": "^4.2.0",
-    "jshint-stylish": "^2.0.1",
     "json-loader": "^0.5.4",
     "lodash": "^3.10.1",
     "merge-stream": "^1.0.0",
