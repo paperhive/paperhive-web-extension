@@ -73,20 +73,7 @@
       <strong ng-if="document.revisions[document.revisions.length - 1].openAccess">
         open-access
       </strong>
-      version of this article in <strong>
-      {{document.revisions[document.revisions.length - 1].journalName}}
-      <span ng-if="document.revisions[document.revisions.length - 1].volume">
-      , volume {{document.revisions[document.revisions.length - 1].volume}}
-      </span>
-      <span ng-if="document.revisions[document.revisions.length - 1].issue">
-       , issue {{document.revisions[document.revisions.length - 1].issue}}
-      </span>
-      <span ng-if="document.revisions[document.revisions.length -
-        1].publishedAt">
-       (published {{document.revisions[document.revisions.length -
-       1].publishedAt | date}}).
-      </span>
-      </strong>
+      version of this article available in <strong>{{latestText}}</strong>.
     </div>
 
     <div ng-if="document.discussions && document.discussions.length > 0"

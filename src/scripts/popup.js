@@ -13,8 +13,22 @@ const paperhive = angular
 .constant('config', require('../../config.json'));
 
 paperhive.controller('PopupCtrl', [
-  'config', '$http', '$scope',
-  (config, $http, $scope) => {
+  'config', '$http', '$scope', '$filter',
+  (config, $http, $scope, $filter) => {
+    const documentToString = (doc) => {
+      // Translate a document to a nicely formatted string to be used in a
+      // sentence.
+      const components = [];
+      if (doc.publisher) {components.push(doc.publisher);}
+      if (doc.journal) {components.push(doc.journal.name);}
+      if (doc.volume) {components.push(`volume ${doc.volume}`);}
+      if (doc.issue) {components.push(`issue ${doc.issue}`);}
+      if (doc.publishedat) {
+        components.push(`published at ${$filter('date')(doc.publishedat, '')}`);
+      }
+      return components.join(', ');
+    };
+
     $scope.frontendUrl = config.frontendUrl;
     $scope.document = {};
 
@@ -69,6 +83,9 @@ paperhive.controller('PopupCtrl', [
             // same as above
             $scope.$apply(() => {
               $scope.document = response;
+              $scope.latestText = documentToString(
+                response.revisions[response.revisions.length - 1]
+              );
             });
           }
         );
