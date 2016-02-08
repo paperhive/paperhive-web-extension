@@ -9,6 +9,7 @@
     "url": "git@github.com:paperhive/paperhive-chrome-extension.git"
   },
   "scripts": {
+    "install-deps": "npm install && bower install",
     "lint": "npm run eslint && npm run htmlhint",
     "eslint": "./node_modules/.bin/eslint src/",
     "htmlhint": "./node_modules/.bin/htmlhint src/",
@@ -21,9 +22,9 @@
     "clean": "rm -rf build && rm -f paperhive.zip"
   },
   "dependencies": {
-    "angular": "^1.4.9",
-    "co": "4.6.0",
-    "paperhive-sources": "1.0.0",
+    "angular": "^1.5.0",
+    "co": "^4.6.0",
+    "paperhive-sources": "^4.0.0",
     "qs": "^6.0.2"
   },
   "devDependencies": {
@@ -37,7 +38,7 @@
     "json-loader": "^0.5.4",
     "less": "^2.6.0",
     "less-loader": "^2.2.2",
-    "lodash": "^3.10.1",
+    "lodash": "^4.0.0",
     "null-loader": "^0.1.1",
     "webpack": "^1.12.12"
   },
