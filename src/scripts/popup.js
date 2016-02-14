@@ -11,7 +11,7 @@ require('angular-moment');
 
 const paperhive = angular
 .module('paperHive', [
-  'angularMoment'
+  'angularMoment',
 ])
 .constant('config', require('../../config.json'));
 
