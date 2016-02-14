@@ -1,7 +1,13 @@
 language: node_js
 
 node_js:
-  - "5.5"
+  - 5
+
+# install dependencies
+addons:
+  apt:
+    packages:
+      - optipng
 
 before_script:
   - cp config.json.default config.json
