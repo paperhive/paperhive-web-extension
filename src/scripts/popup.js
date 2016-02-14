@@ -7,9 +7,12 @@ require('../popup.html');
 require('../styles/popup.less');
 
 const angular = require('angular');
+require('angular-moment');
 
 const paperhive = angular
-.module('paperHive', [])
+.module('paperHive', [
+  'angularMoment'
+])
 .constant('config', require('../../config.json'));
 
 paperhive.controller('PopupCtrl', [
