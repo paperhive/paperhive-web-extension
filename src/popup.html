@@ -87,7 +87,7 @@
       <ul class="list-group">
         <li class="list-group-item" ng-repeat="discussion in document.discussions">
           <a target="_blank"
-             ng-href="{{frontendUrl}}/documents/{{document.meta._id}}/discussions/{{discussion.index}}">
+             ng-href="{{frontendUrl}}/documents/{{document.revisions[document.indices.thisRevision].id}}/discussions/{{discussion.id}}">
              <span
              ng-if="discussion.replies.length > 0"
              class="pull-right ph-discussion-replies-counter"
@@ -96,15 +96,18 @@
              </span></a>
              <div>
                <a target="_blank"
-                 ng-href="{{frontendUrl}}/documents/{{document.meta._id}}/discussions/{{discussion.index}}">
-                 {{discussion.originalAnnotation.title}}</a>
+                  ng-href="{{frontendUrl}}/documents/{{document.revisions[document.indices.thisRevision].id}}/discussions/{{discussion.id}}">
+                 {{discussion.title}}</a>
              </div>
+             {{discussion.createdAt}}
              <span class="ph-discussion-subtitle">
-               #{{discussion.index}} opened
-               <span am-time-ago="discussion.originalAnnotation.createdAt"></span>
+               opened
+               <span am-time-ago="discussion.createdAt"></span>
                by
-               <a target="_blank" ng-href="{{frontendUrl}}/users/{{discussion.originalAnnotation.author.username}}">
-                 {{discussion.originalAnnotation.author.displayName}}
+               <a target="_blank"
+                 ng-href="{{frontendUrl}}/users/{{discussion.author.user.username}}"
+                 >
+                 {{discussion.author.displayName}}
                </a>
              </span>
         </li>
@@ -113,23 +116,10 @@
     </main>
 
     <footer class="ph-footer">
-      <a ng-if="document.meta && document.meta._id"
-         id="link" target="_blank" role="button" class="btn btn-primary"
+      <a id="link" target="_blank" role="button" class="btn btn-primary"
          ng-href="{{frontendUrl}}/documents/{{document.revisions[document.indices.thisRevision].id}}/revisions/{{document.revisions[document.indices.thisRevision].revision}}">
-         >
         Open in PaperHive
       </a>
-
-      <button ng-if="document.revisions && !document.meta._id"
-         type="submit"
-         ng-click="submitApproved(tabUrl)"
-         class="btn btn-primary"
-         ng-disabled="submitting"
-         >
-         <i class="fa fa-fw fa-plus" ng-if="!submitting"></i>
-         <i class="fa fa-fw fa-spinner fa-spin" ng-if="submitting"></i>
-         Open in PaperHive
-      </button>
 
       <a ng-if="!document.revisions"
          type="link"
