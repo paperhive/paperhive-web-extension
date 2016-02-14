@@ -34,7 +34,7 @@
         <h4>
           <a ng-if="document.revisions[document.indices.thisRevision]"
              target="_blank"
-             ng-href="{{frontendUrl}}/documents/{{document.revisions[document.indices.thisRevision].id}}?revision={{document.revisions[document.indices.thisRevision].revision}}">
+             ng-href="{{frontendUrl}}/documents/{{document.revisions[document.indices.thisRevision].id}}/revisions/{{document.revisions[document.indices.thisRevision].revision}}">
             {{document.revisions[document.indices.thisRevision].title}}</a>
           <span ng-if="!document.revisions[document.indices.thisRevision]">
             {{document.revisions[document.indices.thisRevision].title}}
@@ -115,7 +115,7 @@
     <footer class="ph-footer">
       <a ng-if="document.meta && document.meta._id"
          id="link" target="_blank" role="button" class="btn btn-primary"
-         ng-href="{{frontendUrl}}/documents/{{document.meta._id}}"
+         ng-href="{{frontendUrl}}/documents/{{document.revisions[document.indices.thisRevision].id}}/revisions/{{document.revisions[document.indices.thisRevision].revision}}">
          >
         Open in PaperHive
       </a>

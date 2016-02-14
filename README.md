@@ -12,6 +12,12 @@ Status](https://gemnasium.com/paperhive/paperhive-chrome-extension.svg)](https:/
 the`./build/` directory.
 * Go to a page that has PaperHive discussions (e.g., https://arxiv.org/pdf/1208.0264.pdf) and see if it works for you.
 
+For development, use
+```
+npm run watch
+```
+to enable live rebuild of the extension.
+
 ##Distribution
 * Make sure you bumped the version number in `package.json`,
   `src/manifest.json`, and `bower.json`.

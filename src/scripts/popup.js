@@ -20,7 +20,13 @@ paperhive.controller('PopupCtrl', [
       // sentence.
       const components = [];
       if (doc.publisher) {components.push(doc.publisher);}
-      if (doc.journal) {components.push(doc.journal.name);}
+      if (doc.journal) {
+        if (doc.journal.nameLong) {
+          components.push(doc.journal.nameLong);
+        } else if (doc.journal.nameShort) {
+          components.push(doc.journal.nameShort);
+        }
+      }
       if (doc.volume) {components.push(`volume ${doc.volume}`);}
       if (doc.issue) {components.push(`issue ${doc.issue}`);}
       if (doc.publishedat) {

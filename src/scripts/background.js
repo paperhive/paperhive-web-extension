@@ -5,7 +5,7 @@ const co = require('co');
 // import co from 'co';
 const crypto = require('crypto');
 const _ = require('lodash');
-const sources = require('paperhive-sources');
+const sources = require('paperhive-sources')();
 const qs = require('qs');
 
 const config = require('../../config.json');
