@@ -1,12 +1,17 @@
 language: node_js
 
 node_js:
-  - "5.1"
+  - 5
+
+# install dependencies
+addons:
+  apt:
+    packages:
+      - optipng
 
 before_script:
   - cp config.json.default config.json
   - npm install -g bower
-  - npm install -g gulp
   # Install (possibly from cache), update packages according to bower.json,
   # and prune obsolete packages.
   - bower update
@@ -14,9 +19,10 @@ before_script:
   # Ditto.
   - npm update
   - npm prune
+  - npm run lint
 
 script:
-  - gulp
+  - npm run build
 
 sudo: false
 

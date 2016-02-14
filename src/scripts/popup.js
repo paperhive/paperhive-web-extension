@@ -2,75 +2,103 @@
 /* eslint no-param-reassign: 0 */
 'use strict';
 
-(() => {
-  const angular = require('angular');
+// for webpack
+require('../popup.html');
+require('../styles/popup.less');
 
-  const paperhive = angular
-  .module('paperHive', [])
-  .constant('config', require('../../config.json'));
+const angular = require('angular');
+require('angular-moment');
 
-  paperhive.controller('PopupCtrl', [
-    'config', '$http', '$scope',
-    (config, $http, $scope) => {
-      $scope.frontendUrl = config.frontendUrl;
-      $scope.article = {};
+const paperhive = angular
+.module('paperHive', [
+  'angularMoment',
+])
+.constant('config', require('../../config.json'));
 
-      $scope.submitApproved = (url) => {
-        if (url) {
-          $scope.submitting = true;
-          $http.post(config.apiUrl + '/articles/sources', undefined, {
-            params: { xhandle: url },
-          })
-          .success((article) => {
-            $scope.submitting = false;
-            chrome.tabs.create({
-              url: config.frontendUrl + '/articles/' + article._id,
+paperhive.controller('PopupCtrl', [
+  'config', '$http', '$scope', '$filter',
+  (config, $http, $scope, $filter) => {
+    const documentToString = (doc) => {
+      // Translate a document to a nicely formatted string to be used in a
+      // sentence.
+      const components = [];
+      if (doc.publisher) {components.push(doc.publisher);}
+      if (doc.journal) {
+        if (doc.journal.nameLong) {
+          components.push(doc.journal.nameLong);
+        } else if (doc.journal.nameShort) {
+          components.push(doc.journal.nameShort);
+        }
+      }
+      if (doc.volume) {components.push(`volume ${doc.volume}`);}
+      if (doc.issue) {components.push(`issue ${doc.issue}`);}
+      if (doc.publishedat) {
+        components.push(`published at ${$filter('date')(doc.publishedat, '')}`);
+      }
+      return components.join(', ');
+    };
+
+    $scope.frontendUrl = config.frontendUrl;
+    $scope.document = {};
+
+    $scope.submitApproved = (url) => {
+      if (url) {
+        $scope.submitting = true;
+        $http.post(`${config.apiUrl}/documents/url/`, undefined, {
+          q: { xhandle: url },
+        })
+        .success((document) => {
+          $scope.submitting = false;
+          chrome.tabs.create({
+            url: `${config.frontendUrl}/documents/${document.id}`,
+          });
+        })
+        .error((data) => {
+          $scope.submitting = false;
+          let message;
+          if (data && data.message) {
+            message = data.message;
+          } else {
+            message = 'could not add document (unknown reason)';
+          }
+          // notificationService.notifications.push({
+          //   type: 'error',
+          //   message: message
+          // });
+        });
+      }
+    };
+
+    // fetch data from the background script
+    chrome.tabs.query(
+      {
+        active: true,
+        currentWindow: true,
+      },
+      (tabs) => {
+        // expose tab url to popup.html
+        // We need $apply here, see, e.g.,
+        // <http://jimhoskins.com/2012/12/17/angularjs-and-apply.html>.
+        $scope.$apply(() => {
+          $scope.tabUrl = tabs[0].url;
+        });
+        // get document data
+        chrome.runtime.sendMessage(
+          {
+            getDocumentData: true,
+            activeTabId: tabs[0].id,
+          },
+          (response) => {
+            // same as above
+            $scope.$apply(() => {
+              $scope.document = response;
+              $scope.latestText = documentToString(
+                response.revisions[response.revisions.length - 1]
+              );
             });
-          })
-          .error((data) => {
-            $scope.submitting = false;
-            let message;
-            if (data && data.message) {
-              message = data.message;
-            } else {
-              message = 'could not add article (unknown reason)';
-            }
-            // notificationService.notifications.push({
-            //   type: 'error',
-            //   message: message
-            // });
-          });
-        }
-      };
-
-      // fetch data from the background script
-      chrome.tabs.query(
-        {
-          active: true,
-          currentWindow: true,
-        },
-        (tabs) => {
-          // expose tab url to popup.html
-          // We need $apply here, see, e.g.,
-          // <http://jimhoskins.com/2012/12/17/angularjs-and-apply.html>.
-          $scope.$apply(() => {
-            $scope.tabUrl = tabs[0].url;
-          });
-          // get article data
-          chrome.runtime.sendMessage(
-            {
-              getArticleData: true,
-              activeTabId: tabs[0].id,
-            },
-            (response) => {
-              // same as above
-              $scope.$apply(() => {
-                $scope.article.meta = response.article;
-                $scope.article.discussions = response.discussions;
-              });
-            }
-          );
-        }
-      );
-    }]);
-})();
+          }
+        );
+      }
+    );
+  },
+]);

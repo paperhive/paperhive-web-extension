@@ -1,8 +1,7 @@
 {
   "name": "paperhive-chrome-extension",
-  "version": "0.0.6",
+  "version": "0.3.0",
   "dependencies": {
-    "angular": "1.4.8",
     "bootstrap": "3.3.6",
     "fontawesome": "4.5.0",
     "roboto-fontface": "0.4.3"
