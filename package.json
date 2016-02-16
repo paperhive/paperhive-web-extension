@@ -18,6 +18,7 @@
     "js": "./node_modules/.bin/webpack",
     "build": "npm run meta && npm run images && npm run js",
     "zip": "npm run build && zip -r paperhive.zip build/",
+    "xpi": "rm -f paperhive.xpi && npm run build && cd build && zip -r ../paperhive.xpi * && cd ..",
     "watch": "./node_modules/.bin/webpack --progress --colors --watch",
     "clean": "rm -rf build && rm -f paperhive.zip"
   },
