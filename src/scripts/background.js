@@ -30,6 +30,16 @@ const setColorIcon = (tabId) => {
   });
 };
 
+const setGrayIcon = (tabId) => {
+  chrome.browserAction.setIcon({
+    path: {
+      19: 'images/icon-gray-19.png',
+      38: 'images/icon-gray-38.png',
+    },
+    tabId,
+  });
+};
+
 const setOaIcon = (tabId) => {
   chrome.browserAction.setIcon({
     path: {
@@ -41,6 +51,9 @@ const setOaIcon = (tabId) => {
 };
 
 const getDocument = co.wrap(function* main(query, tabId) {
+  // This is done automatically by Chrome, but not by Firefox.
+  setGrayIcon(tabId);
+
   // build query
   const q = _.clone(query);
   // Get only the most recent revision matching the query
