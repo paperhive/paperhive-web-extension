@@ -167,7 +167,6 @@ const extractHeader = (headers, headerName) => {
 // clean up after tab close
 chrome.tabs.onRemoved.addListener(
   (tabId) => {
-    console.log('chrome.tabs.onRemoved');
     documentData[tabId] = undefined;
     pageUrls[tabId] = [];
   }
@@ -227,7 +226,6 @@ const computeHash = co.wrap(function* main(hashUrl, hashType) {
 // <https://code.google.com/p/chromium/issues/detail?id=481411>.
 chrome.webRequest.onCompleted.addListener(
   co.wrap(function* main(details) {
-    console.log('chrome.webRequest.onCompleted');
     if (details.frameId !== 0) {
       // don't do anything if we're not in the main frame
       return;
@@ -258,7 +256,6 @@ chrome.webRequest.onCompleted.addListener(
 // add listener for content script communication
 chrome.runtime.onMessage.addListener(
   (request, sender, sendResponse) => {
-    console.log('chrome.webNavigation.onMessage');
     // The tab ID is either in the sender (if a content script sent the
     // request) or in the request.activeTabId (if popup.js sent the request).
     const tabId = request.activeTabId || sender.tab.id;
@@ -285,7 +282,6 @@ chrome.runtime.onMessage.addListener(
 // DOI checker
 chrome.webNavigation.onCompleted.addListener(
   (details) => {
-    console.log('chrome.webNavigation.onCompleted');
     if (details.frameId !== 0) {
       // don't do anything if we're not in the main frame
       return;
