@@ -116,6 +116,7 @@
 
     <footer class="ph-footer">
       <a id="link" target="_blank" role="button" class="btn btn-primary"
+         ng-if="document.revisions"
          ng-href="{{frontendUrl}}/documents/{{document.revisions[document.indices.thisRevision].id}}/revisions/{{document.revisions[document.indices.thisRevision].revision}}">
         Open in PaperHive
       </a>
