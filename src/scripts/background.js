@@ -111,8 +111,8 @@ const getDiscussions = co.wrap(function* main(documentId, tabId) {
     return;
   }
   // fetch discussions
-  const url = `${config.apiUrl}/documents/${documentId}/discussions/`;
-  const response = yield fetch(url);
+  const discUrl = `${config.apiUrl}/documents/${documentId}/discussions/`;
+  const response = yield fetch(discUrl);
   if (!response.ok) {
     throw Error('discussion GET unsuccessful');
   }
@@ -142,7 +142,7 @@ const responseData = (tabId) => (err) => {
     // send the data
     responseSender[tabId](documentData[tabId]);
     // remove the dangling request
-    responseSender[tabId] = null;
+    responseSender[tabId] = undefined;
   }
 };
 
@@ -205,8 +205,8 @@ chrome.webNavigation.onCommitted.addListener(
 );
 
 // http://stackoverflow.com/a/33931307/353337
-const computeHash = co.wrap(function* main(url, hashType) {
-  const response = yield fetch(url);
+const computeHash = co.wrap(function* main(hashUrl, hashType) {
+  const response = yield fetch(hashUrl);
   if (!response.ok) {
     throw Error('pdf GET unsuccessful');
   }

@@ -69,6 +69,10 @@ paperhive.controller('PopupCtrl', [
       }
     };
 
+    // reset document data
+    $scope.document = undefined;
+    $scope.latestText = undefined;
+
     // fetch data from the background script
     chrome.tabs.query(
       {
@@ -76,10 +80,6 @@ paperhive.controller('PopupCtrl', [
         currentWindow: true,
       },
       (tabs) => {
-        // reset document data
-        $scope.document = undefined;
-        $scope.latestText = undefined;
-
         // expose tab url to popup.html
         // We need $apply here, see, e.g.,
         // <http://jimhoskins.com/2012/12/17/angularjs-and-apply.html>.
