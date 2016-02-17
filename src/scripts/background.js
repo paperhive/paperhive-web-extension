@@ -290,6 +290,10 @@ chrome.webNavigation.onCompleted.addListener(
       // don't do anything if we're not in the main frame
       return;
     }
+    if (documentData[details.tabId]) {
+      // don't do anything if we already have document data for the tab
+      return;
+    }
 
     const searchDoiOnPaperhive = co.wrap(function* search(doi) {
       if (!doi) {return;}
