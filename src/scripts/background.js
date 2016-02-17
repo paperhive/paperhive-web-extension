@@ -264,7 +264,7 @@ chrome.runtime.onMessage.addListener(
     }
 
     if (request.getDocumentData) {
-      if (documentData[tabId].revisions) {
+      if (documentData[tabId]) {
         // send immediately since the tab is fully loaded
         sendResponse(documentData[tabId]);
       } else {
