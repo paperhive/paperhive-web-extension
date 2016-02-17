@@ -2,11 +2,11 @@
 
 const buffer = require('buffer');
 const co = require('co');
-// import co from 'co';
 const crypto = require('crypto');
 const _ = require('lodash');
 const sources = require('paperhive-sources')();
 const qs = require('qs');
+const url = require('url');
 
 const config = require('../../config.json');
 
@@ -154,6 +154,7 @@ const extractHeader = (headers, headerName) => {
 // clean up after tab close
 chrome.tabs.onRemoved.addListener(
   (tabId) => {
+    console.log('chrome.tabs.onRemoved');
     documentData[tabId] = undefined;
     pageUrls[tabId] = [];
   }
@@ -165,8 +166,10 @@ chrome.tabs.onRemoved.addListener(
 // little bit later, namely at onCommitted.
 chrome.webNavigation.onCommitted.addListener(
   co.wrap(function* chain(details) {
-    if (details.frameId !== 0) {
-      // don't do anything if we're not in the main frame
+    if (details.frameId !== 0 ||
+        sources.hostnames.indexOf(url.parse(details.url).hostname) === -1) {
+      // Don't do anything if we're not in the main frame or if the hostname
+      // isn't whitelisted.
       return;
     }
     // Check if the URL indeed represents a valid remote; the urlFilter is a
@@ -179,11 +182,13 @@ chrome.webNavigation.onCommitted.addListener(
     const documentId = yield getDocument({ url: details.url }, details.tabId);
     yield getDiscussions(documentId, details.tabId);
     responseData(details.tabId);
-  }),
-  {
-    url: urlFilter,
-    types: ['main_frame'],
-  }
+  })
+  // Not supported in Firefox, cf.
+  // <https://bugzilla.mozilla.org/show_bug.cgi?id=1242522>.
+  // ,{
+  //   url: urlFilter,
+  //   types: ['main_frame'],
+  // }
 );
 
 // http://stackoverflow.com/a/33931307/353337
@@ -209,6 +214,7 @@ const computeHash = co.wrap(function* main(url, hashType) {
 // <https://code.google.com/p/chromium/issues/detail?id=481411>.
 chrome.webRequest.onCompleted.addListener(
   co.wrap(function* main(details) {
+    console.log('chrome.webRequest.onCompleted');
     if (details.frameId !== 0) {
       // don't do anything if we're not in the main frame
       return;
@@ -239,6 +245,7 @@ chrome.webRequest.onCompleted.addListener(
 // add listener for content script communication
 chrome.runtime.onMessage.addListener(
   (request, sender, sendResponse) => {
+    console.log('chrome.webNavigation.onMessage');
     // The tab ID is either in the sender (if a content script sent the
     // request) or in the request.activeTabId (if popup.js sent the request).
     const tabId = request.activeTabId || sender.tab.id;
@@ -265,6 +272,7 @@ chrome.runtime.onMessage.addListener(
 // DOI checker
 chrome.webNavigation.onCompleted.addListener(
   (details) => {
+    console.log('chrome.webNavigation.onCompleted');
     if (details.frameId !== 0) {
       // don't do anything if we're not in the main frame
       return;
@@ -290,8 +298,10 @@ chrome.webNavigation.onCompleted.addListener(
       { keys: ['citation_doi', 'DC.Identifier'] },
       searchDoiOnPaperhive
     );
-  },
-  {
-    types: ['main_frame'],
   }
+  // Not supported in Firefox, cf.
+  // <https://bugzilla.mozilla.org/show_bug.cgi?id=1242522>.
+  // ,{
+  //   types: ['main_frame'],
+  // }
 );
