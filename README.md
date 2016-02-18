@@ -1,13 +1,13 @@
-# Chrome extension for PaperHive
+# Browser extension for PaperHive
 
 [![Build
-Status](https://travis-ci.org/paperhive/paperhive-chrome-extension.svg?branch=master)](https://travis-ci.org/paperhive/paperhive-chrome-extension)
+Status](https://travis-ci.org/paperhive/paperhive-web-extension.svg?branch=master)](https://travis-ci.org/paperhive/paperhive-chrome-extension)
 [![Dependency
-Status](https://gemnasium.com/paperhive/paperhive-chrome-extension.svg)](https://gemnasium.com/paperhive/paperhive-chrome-extension)
+Status](https://gemnasium.com/paperhive/paperhive-web-extension.svg)](https://gemnasium.com/paperhive/paperhive-web-extension)
 
 ##Build instructions
 * Run `npm run install-deps` for installing all dependencies.
-* Run `npm run build`. This will build the extension in `./build/`.
+* Run `npm run build:chrome`. This will build the extension in `./build/`.
 * Open Chrom{e,ium} on [chrome://extensions/](chrome://extensions/) and "Load unpacked extension" from
 the`./build/` directory.
 * Go to a page that has PaperHive discussions (e.g., https://arxiv.org/pdf/1208.0264.pdf) and see if it works for you.
