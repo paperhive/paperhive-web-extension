@@ -5,6 +5,12 @@ Status](https://travis-ci.org/paperhive/paperhive-web-extension.svg?branch=maste
 [![Dependency
 Status](https://gemnasium.com/paperhive/paperhive-web-extension.svg)](https://gemnasium.com/paperhive/paperhive-web-extension)
 
+The extension can be installed for both
+
+ * [Chrome/Chromium](https://chrome.google.com/webstore/detail/paperhive/fihafdlllifbanclcjljledeifcdjbok) and
+ * [Firefox](https://addons.mozilla.org/en-US/developers/addon/paperhive/).
+
+
 ##Build instructions
 * Run `npm run install-deps` for installing all dependencies.
 * Run `npm run build:chrome`. This will build the extension in `./build/`.
