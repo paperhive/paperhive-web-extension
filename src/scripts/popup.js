@@ -69,6 +69,10 @@ paperhive.controller('PopupCtrl', [
       }
     };
 
+    // reset document data
+    $scope.document = undefined;
+    $scope.latestText = undefined;
+
     // fetch data from the background script
     chrome.tabs.query(
       {

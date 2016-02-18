@@ -2,11 +2,11 @@
 
 const buffer = require('buffer');
 const co = require('co');
-// import co from 'co';
 const crypto = require('crypto');
 const _ = require('lodash');
 const sources = require('paperhive-sources')();
 const qs = require('qs');
+const url = require('url');
 
 const config = require('../../config.json');
 
@@ -30,6 +30,16 @@ const setColorIcon = (tabId) => {
   });
 };
 
+const setGrayIcon = (tabId) => {
+  chrome.browserAction.setIcon({
+    path: {
+      19: 'images/icon-gray-19.png',
+      38: 'images/icon-gray-38.png',
+    },
+    tabId,
+  });
+};
+
 const setOaIcon = (tabId) => {
   chrome.browserAction.setIcon({
     path: {
@@ -41,6 +51,9 @@ const setOaIcon = (tabId) => {
 };
 
 const getDocument = co.wrap(function* main(query, tabId) {
+  // This is done automatically by Chrome, but not by Firefox.
+  setGrayIcon(tabId);
+
   // build query
   const q = _.clone(query);
   // Get only the most recent revision matching the query
@@ -98,8 +111,8 @@ const getDiscussions = co.wrap(function* main(documentId, tabId) {
     return;
   }
   // fetch discussions
-  const url = `${config.apiUrl}/documents/${documentId}/discussions/`;
-  const response = yield fetch(url);
+  const discUrl = `${config.apiUrl}/documents/${documentId}/discussions/`;
+  const response = yield fetch(discUrl);
   if (!response.ok) {
     throw Error('discussion GET unsuccessful');
   }
@@ -129,7 +142,7 @@ const responseData = (tabId) => (err) => {
     // send the data
     responseSender[tabId](documentData[tabId]);
     // remove the dangling request
-    responseSender[tabId] = null;
+    responseSender[tabId] = undefined;
   }
 };
 
@@ -165,8 +178,10 @@ chrome.tabs.onRemoved.addListener(
 // little bit later, namely at onCommitted.
 chrome.webNavigation.onCommitted.addListener(
   co.wrap(function* chain(details) {
-    if (details.frameId !== 0) {
-      // don't do anything if we're not in the main frame
+    if (details.frameId !== 0 ||
+        sources.hostnames.indexOf(url.parse(details.url).hostname) === -1) {
+      // Don't do anything if we're not in the main frame or if the hostname
+      // isn't whitelisted.
       return;
     }
     // Check if the URL indeed represents a valid remote; the urlFilter is a
@@ -179,16 +194,18 @@ chrome.webNavigation.onCommitted.addListener(
     const documentId = yield getDocument({ url: details.url }, details.tabId);
     yield getDiscussions(documentId, details.tabId);
     responseData(details.tabId);
-  }),
-  {
-    url: urlFilter,
-    types: ['main_frame'],
-  }
+  })
+  // Not supported in Firefox, cf.
+  // <https://bugzilla.mozilla.org/show_bug.cgi?id=1242522>.
+  // ,{
+  //   url: urlFilter,
+  //   types: ['main_frame'],
+  // }
 );
 
 // http://stackoverflow.com/a/33931307/353337
-const computeHash = co.wrap(function* main(url, hashType) {
-  const response = yield fetch(url);
+const computeHash = co.wrap(function* main(hashUrl, hashType) {
+  const response = yield fetch(hashUrl);
   if (!response.ok) {
     throw Error('pdf GET unsuccessful');
   }
@@ -247,7 +264,7 @@ chrome.runtime.onMessage.addListener(
     }
 
     if (request.getDocumentData) {
-      if (documentData[tabId].revisions) {
+      if (documentData[tabId]) {
         // send immediately since the tab is fully loaded
         sendResponse(documentData[tabId]);
       } else {
@@ -267,6 +284,10 @@ chrome.webNavigation.onCompleted.addListener(
   (details) => {
     if (details.frameId !== 0) {
       // don't do anything if we're not in the main frame
+      return;
+    }
+    if (documentData[details.tabId]) {
+      // don't do anything if we already have document data for the tab
       return;
     }
 
@@ -290,8 +311,10 @@ chrome.webNavigation.onCompleted.addListener(
       { keys: ['citation_doi', 'DC.Identifier'] },
       searchDoiOnPaperhive
     );
-  },
-  {
-    types: ['main_frame'],
   }
+  // Not supported in Firefox, cf.
+  // <https://bugzilla.mozilla.org/show_bug.cgi?id=1242522>.
+  // ,{
+  //   types: ['main_frame'],
+  // }
 );
