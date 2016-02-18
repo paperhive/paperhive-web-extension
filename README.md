@@ -19,14 +19,12 @@ npm run watch
 to enable live rebuild of the extension.
 
 ##Distribution
-* Make sure you bumped the version number in `package.json`,
-  `src/manifest.json`, and `bower.json`.
+* Make sure you bumped the version number in
+  - `package.json`,
+  - `src/manifest.json.chrome`,
+  - `src/manifest.json.firefox`, and
+  - `bower.json`.
 * Make sure you are on the `master` branch.
-* Build the extension
-  ```
-  npm run zip
-  ```
-  It will be zipped as `./paperhive.zip`.
 * Create Git tag
   ```
   git tag v0.1.0
@@ -34,11 +32,18 @@ to enable live rebuild of the extension.
   ```
 
 ### Chrome
-* Go to [PaperHive's web store page](https://chrome.google.com/webstore/developer/edit/fihafdlllifbanclcjljledeifcdjbok)
-  and upload a new package.
+* Build the extension for Chrome,
+  ```
+  npm run zip
+  ```
+  and upload `./paperhive.zip` to [PaperHive's web store page](https://chrome.google.com/webstore/developer/edit/fihafdlllifbanclcjljledeifcdjbok).
 
 ### Firefox
-* Not quite ready yet.
+* Build the extension for Firefox,
+  ```
+  npm run xpi
+  ```
+  and upload `./paperhive.xpi` to [PaperHive's Mozilla add-on page](https://addons.mozilla.org/en-US/developers/addon/paperhive/).
 
 ## License
 The PaperHive Chrome Extension is licensed under the
