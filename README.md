@@ -43,7 +43,7 @@ to enable live rebuild of the extension.
   ```
   npm run xpi
   ```
-  and upload `./paperhive.xpi` to [PaperHive's Mozilla add-on page](https://addons.mozilla.org/en-US/developers/addon/paperhive/).
+  and upload `./paperhive.xpi` to [PaperHive's Mozilla add-on page](https://addons.mozilla.org/en-US/developers/addon/paperhive/versions).
 
 ## License
 The PaperHive Chrome Extension is licensed under the

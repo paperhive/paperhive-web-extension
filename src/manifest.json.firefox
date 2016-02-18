@@ -5,7 +5,7 @@
   "description": "Get notified about discussions on PaperHive about the research article you're looking at.",
   "applications": {
     "gecko": {
-      "id": "borderify@mozilla.org"
+      "id": "@paperhive"
     }
   },
   "icons": {
