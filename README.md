@@ -12,11 +12,12 @@ The extension can be installed for both
 
 
 ##Build instructions
+* Copy `config.json.default` to `config.json` and adapt to your needs.
 * Run `npm run install-deps` for installing all dependencies.
 * Run `npm run build:chrome`. This will build the extension in `./build/`.
 * Open Chrom{e,ium} on [chrome://extensions/](chrome://extensions/) and "Load unpacked extension" from
 the`./build/` directory.
-* Go to a page that has PaperHive discussions (e.g., https://arxiv.org/pdf/1208.0264.pdf) and see if it works for you.
+* Go to a page that has PaperHive discussions (e.g., https://arxiv.org/abs/1208.0264) and see if it works for you.
 
 For development, use
 ```
