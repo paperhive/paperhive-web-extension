@@ -95,11 +95,11 @@ const getDocument = co.wrap(function* main(query, tabId) {
     // store a bunch of indices along with allRevisions
     indices: {
       thisRevision: _.findLastIndex(all.revisions, { revision: thisRevision.revision }),
-      newestOa: _.findLastIndex(all.revisions, { openAccess: true }),
+      newestOa: _.findLastIndex(all.revisions, { isOpenAccess: true }),
     },
   };
 
-  if (!thisRevision.openAccess && documentData[tabId].indices.newestOa > -1) {
+  if (!thisRevision.isOpenAccess && documentData[tabId].indices.newestOa > -1) {
     setOaIcon(tabId);
   }
 
