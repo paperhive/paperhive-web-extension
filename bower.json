@@ -4,7 +4,7 @@
   "dependencies": {
     "bootstrap": "3.3.6",
     "fontawesome": "4.5.0",
-    "roboto-fontface": "0.4.3"
+    "roboto-fontface": "0.4.5"
   },
   "devDependencies": {}
 }
