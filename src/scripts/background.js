@@ -155,8 +155,6 @@ const getDocument = co.wrap(function* main(documentId, revisionId) {
 });
 
 const getDiscussions = co.wrap(function* main(documentId) {
-  console.log('getDiscussions');
-  console.log(documentId);
   if (!documentId) {
     return undefined;
   }
@@ -254,7 +252,6 @@ chrome.webNavigation.onCommitted.addListener(
       //   /documents/<documentId>/revisions/<revisionId>
       //
       const pieces = parsedUrl.path.split('/');
-      console.log(pieces);
 
       const docIdx = pieces.indexOf('documents');
       if (docIdx + 1 > pieces.length) {
@@ -403,7 +400,6 @@ chrome.runtime.onMessage.addListener(
     }
 
     if (request.getDocumentData) {
-      console.log('search');
       if (documentData[tabId]) {
         // send immediately since the tab is fully loaded
         sendResponse(documentData[tabId]);
