@@ -353,6 +353,15 @@ chrome.webNavigation.onCompleted.addListener(
       // don't do anything if we're not in the main frame
       return;
     }
+
+    // The DOI specification on arxiv.org is inaccurate in that it doesn't
+    // represent the DOI of the currently focused article, but a "related"
+    // version.
+    const parsedUrl = url.parse(details.url);
+    if (['arxiv.org'].indexOf(parsedUrl.hostname) !== -1) {
+      return;
+    }
+
     if (documentData[details.tabId]) {
       // don't do anything if we already have document data for the tab
       return;
