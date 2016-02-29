@@ -48,7 +48,7 @@
       </div>
     </div>
 
-    <div ng-if="!document.revisions[document.indices.thisRevision].openAccess
+    <div ng-if="!document.revisions[document.indices.thisRevision].isOpenAccess
          && document.indices.newestOa > 0"
       class="alert alert-warning"
       role="alert">
@@ -70,7 +70,7 @@
       class="alert alert-warning"
       role="alert">
       There is a more recent
-      <strong ng-if="document.revisions[document.revisions.length - 1].openAccess">
+      <strong ng-if="document.revisions[document.revisions.length - 1].isOpenAccess">
         open-access
       </strong>
       version of this article available in <strong>{{latestText}}</strong>.

@@ -10,11 +10,21 @@ const url = require('url');
 
 const config = require('../../config.json');
 
+const whitelistedHostnames =
+  [
+    'arxiv.org',
+    'link.springer.com',
+    'beta.paperhive.org',
+    'paperhive.org',
+  ];
+
+/*
 // https://developer.chrome.com/extensions/events#filtered
 const urlFilter = [];
 sources.hostnames.forEach((hostname) => {
   urlFilter.push({ hostSuffix: hostname });
 });
+*/
 
 const documentData = {};
 const pageUrls = {};
@@ -50,16 +60,37 @@ const setOaIcon = (tabId) => {
   });
 };
 
-const getDocument = co.wrap(function* main(query, tabId) {
-  // This is done automatically by Chrome, but not by Firefox.
-  setGrayIcon(tabId);
+function updateIcon(docData, tabId) {
+  if (!docData) {
+    return;
+  }
 
+  if (!docData.revisions[docData.indices.thisRevision].isOpenAccess &&
+      docData.indices.newestOa > -1) {
+    setOaIcon(tabId);
+  } else {
+    setColorIcon(tabId);
+  }
+}
+
+function updateBadge(numDiscussions, tabId) {
+  if (numDiscussions > 0) {
+    // chrome.browserAction.setBadgeBackgroundColor([255, 0, 0, 255]);
+    chrome.browserAction.setBadgeText({
+      text: numDiscussions < 1000 ?
+        numDiscussions.toString() : '999+',
+      tabId,
+    });
+  }
+}
+
+const searchDocument = co.wrap(function* main(query) {
   // build query
   const q = _.clone(query);
   // Get only the most recent revision matching the query
   q.sortBy = '-publishedAt';
   q.limit = 1;
-  let response = yield fetch(`${config.apiUrl}/documents?${qs.stringify(q)}`);
+  const response = yield fetch(`${config.apiUrl}/documents?${qs.stringify(q)}`);
   if (!response.ok) {
     throw Error('document GET unsuccessful');
   }
@@ -80,17 +111,15 @@ const getDocument = co.wrap(function* main(query, tabId) {
     thisRevision = yield postResponse.json();
   }
 
-  setColorIcon(tabId);
-
   // Now get all revisions of the document; they come in chronological order
-  response = yield fetch(`${config.apiUrl}/documents/${thisRevision.id}/revisions/`);
-  if (!response.ok) {
+  const response2 = yield fetch(`${config.apiUrl}/documents/${thisRevision.id}/revisions/`);
+  if (!response2.ok) {
     throw Error('document GET unsuccessful');
   }
-  const all = yield response.json();
+  const all = yield response2.json();
 
   // set tab data for communication with the popup script
-  documentData[tabId] = {
+  return {
     revisions: all.revisions,
     // store a bunch of indices along with allRevisions
     indices: {
@@ -98,17 +127,38 @@ const getDocument = co.wrap(function* main(query, tabId) {
       newestOa: _.findLastIndex(all.revisions, { isOpenAccess: true }),
     },
   };
-
-  if (!thisRevision.isOpenAccess && documentData[tabId].indices.newestOa > -1) {
-    setOaIcon(tabId);
-  }
-
-  return thisRevision.id;
 });
 
-const getDiscussions = co.wrap(function* main(documentId, tabId) {
+const getDocument = co.wrap(function* main(documentId, revisionId) {
+  // Get all revisions of the document; they come in chronological order
+  const response = yield fetch(`${config.apiUrl}/documents/${documentId}/revisions/`);
+  if (!response.ok) {
+    throw Error('document GET unsuccessful');
+  }
+  const all = yield response.json();
+
+  // On paperhive.org, only OA revisions are displayed.
+  const search = { isOpenAccess: true };
+  if (revisionId) {search.revision = revisionId;}
+
+  const thisRevisionIdx = _.findLastIndex(all.revisions, search);
+
+  // set tab data for communication with the popup script
+  return {
+    revisions: all.revisions,
+    // store a bunch of indices along with allRevisions
+    indices: {
+      thisRevision: thisRevisionIdx,
+      newestOa: thisRevisionIdx,
+    },
+  };
+});
+
+const getDiscussions = co.wrap(function* main(documentId) {
+  console.log('getDiscussions');
+  console.log(documentId);
   if (!documentId) {
-    return;
+    return undefined;
   }
   // fetch discussions
   const discUrl = `${config.apiUrl}/documents/${documentId}/discussions/`;
@@ -117,17 +167,8 @@ const getDiscussions = co.wrap(function* main(documentId, tabId) {
     throw Error('discussion GET unsuccessful');
   }
   const res = yield response.json();
-  // set icon
-  if (res.discussions && res.discussions.length > 0) {
-    // chrome.browserAction.setBadgeBackgroundColor([255, 0, 0, 255]);
-    chrome.browserAction.setBadgeText({
-      text: res.discussions.length < 1000 ?
-        res.discussions.length.toString() : '999+',
-      tabId,
-    });
-  }
-  // set data
-  documentData[tabId].discussions = res.discussions;
+
+  return res.discussions;
 });
 
 const responseData = (tabId) => (err) => {
@@ -146,6 +187,7 @@ const responseData = (tabId) => (err) => {
   }
 };
 
+/*
 // from <http://stackoverflow.com/a/21042958/353337>
 const extractHeader = (headers, headerName) => {
   for (let i = 0; i < headers.length; ++i) {
@@ -154,7 +196,9 @@ const extractHeader = (headers, headerName) => {
       return header;
     }
   }
+  return undefined;
 };
+*/
 
 // // create data item
 // chrome.tabs.onCreated.addListener(
@@ -178,21 +222,68 @@ chrome.tabs.onRemoved.addListener(
 // little bit later, namely at onCommitted.
 chrome.webNavigation.onCommitted.addListener(
   co.wrap(function* chain(details) {
-    if (details.frameId !== 0 ||
-        sources.hostnames.indexOf(url.parse(details.url).hostname) === -1) {
-      // Don't do anything if we're not in the main frame or if the hostname
-      // isn't whitelisted.
+    const parsedUrl = url.parse(details.url);
+    if (details.frameId !== 0) {
+      // Don't do anything if we're not in the main frame.
       return;
     }
-    // Check if the URL indeed represents a valid remote; the urlFilter is a
-    // preliminary test. Perhaps we can scratch this one here.
-    const remote = sources.parseUrl(details.url);
-    if (!remote) {
-      console.log(`${details.url} is no valid URL`);
+
+    if (documentData[details.tabId]) {
+      // don't do anything if we already have document data for the tab
       return;
     }
-    const documentId = yield getDocument({ url: details.url }, details.tabId);
-    yield getDiscussions(documentId, details.tabId);
+
+    // This is done automatically by Chrome, but not by Firefox.
+    setGrayIcon(details.tabId);
+
+    if (whitelistedHostnames.indexOf(parsedUrl.hostname) === -1) {
+      // Don't do anything if the hostname isn't whitelisted.
+      return;
+    }
+
+    // First check if we're on PaperHive itself.
+    let docData;
+    if (['beta.paperhive.org', 'paperhive.org'].indexOf(parsedUrl.hostname) !== -1) {
+      // Extract document id and revision id from URL.  This assumes a format
+      // like
+      //
+      //   /documents/<documentId>
+      //
+      // or
+      //
+      //   /documents/<documentId>/revisions/<revisionId>
+      //
+      const pieces = parsedUrl.path.split('/');
+      console.log(pieces);
+
+      const docIdx = pieces.indexOf('documents');
+      if (docIdx + 1 > pieces.length) {
+        // invalid url
+        return;
+      }
+      const documentId = pieces[docIdx + 1];
+
+      const revisionIdx = pieces.indexOf('revisions');
+      const revisionId = (revisionIdx + 1 <= pieces.length) ?
+        pieces[revisionIdx + 1] :
+        undefined;
+
+      docData = yield getDocument(documentId, revisionId, details.tabId);
+    } else {
+      // Check if the URL indeed represents a valid remote.
+      const remote = sources.parseUrl(details.url);
+      if (!remote) {
+        console.log(`${details.url} is no valid URL`);
+        return;
+      }
+      docData = yield searchDocument({ url: details.url });
+    }
+    const documentId = docData.revisions[docData.indices.thisRevision].id;
+    const disc = yield getDiscussions(documentId);
+    documentData[details.tabId] = docData;
+    documentData[details.tabId].discussions = disc;
+    updateIcon(documentData[details.tabId], details.tabId);
+    updateBadge(disc.length, details.tabId);
     responseData(details.tabId);
   })
   // Not supported in Firefox, cf.
@@ -203,6 +294,7 @@ chrome.webNavigation.onCommitted.addListener(
   // }
 );
 
+/*
 // http://stackoverflow.com/a/33931307/353337
 const computeHash = co.wrap(function* main(hashUrl, hashType) {
   const response = yield fetch(hashUrl);
@@ -215,7 +307,9 @@ const computeHash = co.wrap(function* main(hashUrl, hashType) {
   hash.update(buf, 'binary');
   return hash.digest('hex');
 });
+*/
 
+/*
 // TODO
 // Check <http://stackoverflow.com/a/27771671/353337> for a complete rundown
 // of how to detect if a page serves PDF content.
@@ -242,42 +336,16 @@ chrome.webRequest.onCompleted.addListener(
     // Since we have no access to the PDF data, we have to fetch it again
     // and hope it gets served from cache.
     // TODO come up with something smarter here
-    const documentId = yield getDocument({ pdfHash: hash }, details.tabId);
+    const documentId = yield searchDocument({ pdfHash: hash });
     yield getDiscussions(documentId, details.tabId);
     responseData(details.tabId);
   }),
   {
-    urls: ['*://*/*'],
     types: ['main_frame'],
   },
   ['responseHeaders']
 );
-
-// add listener for content script communication
-chrome.runtime.onMessage.addListener(
-  (request, sender, sendResponse) => {
-    // The tab ID is either in the sender (if a content script sent the
-    // request) or in the request.activeTabId (if popup.js sent the request).
-    const tabId = request.activeTabId || sender.tab.id;
-    if (!tabId) {
-      console.error('Invalid tab ID.');
-    }
-
-    if (request.getDocumentData) {
-      if (documentData[tabId]) {
-        // send immediately since the tab is fully loaded
-        sendResponse(documentData[tabId]);
-      } else {
-        // send later, cf.
-        // <http://stackoverflow.com/a/30020271/353337>
-        responseSender[tabId] = sendResponse;
-        // returning `true` to indicate that we intend to send later, cf.
-        // <https://developer.chrome.com/extensions/runtime#event-onMessage>
-        return true;
-      }
-    }
-  }
-);
+*/
 
 // DOI checker
 chrome.webNavigation.onCompleted.addListener(
@@ -293,8 +361,13 @@ chrome.webNavigation.onCompleted.addListener(
 
     const searchDoiOnPaperhive = co.wrap(function* search(doi) {
       if (!doi) {return;}
-      const documentId = yield getDocument({ doi }, details.tabId);
-      yield getDiscussions(documentId, details.tabId);
+      const docData = yield searchDocument({ doi });
+      const documentId = docData.revisions[docData.indices.thisRevision].id;
+      const disc = yield getDiscussions(documentId);
+      documentData[details.tabId] = docData;
+      documentData[details.tabId].discussions = disc;
+      updateIcon(documentData[details.tabId], details.tabId);
+      updateBadge(disc.length, details.tabId);
       responseData(details.tabId);
     });
 
@@ -317,4 +390,32 @@ chrome.webNavigation.onCompleted.addListener(
   // ,{
   //   types: ['main_frame'],
   // }
+);
+
+// add listener for content script communication
+chrome.runtime.onMessage.addListener(
+  (request, sender, sendResponse) => {
+    // The tab ID is either in the sender (if a content script sent the
+    // request) or in the request.activeTabId (if popup.js sent the request).
+    const tabId = request.activeTabId || sender.tab.id;
+    if (!tabId) {
+      console.error('Invalid tab ID.');
+    }
+
+    if (request.getDocumentData) {
+      console.log('search');
+      if (documentData[tabId]) {
+        // send immediately since the tab is fully loaded
+        sendResponse(documentData[tabId]);
+      } else {
+        // send later, cf.
+        // <http://stackoverflow.com/a/30020271/353337>
+        responseSender[tabId] = sendResponse;
+        // returning `true` to indicate that we intend to send later, cf.
+        // <https://developer.chrome.com/extensions/runtime#event-onMessage>
+        return true;
+      }
+    }
+    return undefined;
+  }
 );
