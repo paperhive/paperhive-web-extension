@@ -27,7 +27,6 @@ sources.hostnames.forEach((hostname) => {
 */
 
 const documentData = {};
-const pageUrls = {};
 const responseSender = {};
 
 const setColorIcon = (tabId) => {
@@ -181,7 +180,7 @@ const responseData = (tabId) => (err) => {
     // send the data
     responseSender[tabId](documentData[tabId]);
     // remove the dangling request
-    responseSender[tabId] = undefined;
+    delete responseSender[tabId];
   }
 };
 
@@ -209,8 +208,7 @@ const extractHeader = (headers, headerName) => {
 // clean up after tab close
 chrome.tabs.onRemoved.addListener(
   (tabId) => {
-    documentData[tabId] = undefined;
-    pageUrls[tabId] = [];
+    delete documentData[tabId];
   }
 );
 
@@ -233,6 +231,7 @@ chrome.webNavigation.onCommitted.addListener(
 
     // This is done automatically by Chrome, but not by Firefox.
     setGrayIcon(details.tabId);
+    delete documentData[details.tabId];
 
     if (whitelistedHostnames.indexOf(parsedUrl.hostname) === -1) {
       // Don't do anything if the hostname isn't whitelisted.
