@@ -18,13 +18,6 @@ const whitelistedHostnames =
     'paperhive.org',
   ];
 
-/*
-// https://developer.chrome.com/extensions/events#filtered
-const urlFilter = [];
-sources.hostnames.forEach((hostname) => {
-  urlFilter.push({ hostSuffix: hostname });
-});
-*/
 
 const documentData = {};
 const responseSender = {};
@@ -191,27 +184,6 @@ const responseData = (tabId) => (err) => {
   }
 };
 
-/*
-// from <http://stackoverflow.com/a/21042958/353337>
-const extractHeader = (headers, headerName) => {
-  for (let i = 0; i < headers.length; ++i) {
-    const header = headers[i];
-    if (header.name.toLowerCase() === headerName) {
-      return header;
-    }
-  }
-  return undefined;
-};
-*/
-
-// // create data item
-// chrome.tabs.onCreated.addListener(
-//   function(tab) {
-//     console.log('tabs.onCreated ' + tab.id);
-//     documentData[tab.id] = {};
-//   }
-// );
-
 // clean up after tab close
 chrome.tabs.onRemoved.addListener(
   (tabId) => {
@@ -292,59 +264,6 @@ chrome.webNavigation.onCommitted.addListener(
   //   types: ['main_frame'],
   // }
 );
-
-/*
-// http://stackoverflow.com/a/33931307/353337
-const computeHash = co.wrap(function* main(hashUrl, hashType) {
-  const response = yield fetch(hashUrl);
-  if (!response.ok) {
-    throw Error('pdf GET unsuccessful');
-  }
-  const arrayBuffer = yield response.arrayBuffer();
-  const buf = new Uint8Array(arrayBuffer);
-  const hash = crypto.createHash(hashType);
-  hash.update(buf, 'binary');
-  return hash.digest('hex');
-});
-*/
-
-/*
-// TODO
-// Check <http://stackoverflow.com/a/27771671/353337> for a complete rundown
-// of how to detect if a page serves PDF content.
-//
-// Unfortunately, Chrome 42 doesn't properly fire
-// chrome.webRequest.onCompleted/main_frame when loading a PDF page. When
-// it's served from cache, it does. See
-// <https://code.google.com/p/chromium/issues/detail?id=481411>.
-chrome.webRequest.onCompleted.addListener(
-  co.wrap(function* main(details) {
-    if (details.frameId !== 0) {
-      // don't do anything if we're not in the main frame
-      return;
-    }
-
-    const header = extractHeader(details.responseHeaders, 'content-type');
-    const mimetype = header && header.value.split(';', 1)[0];
-    if (mimetype !== 'application/pdf') {
-      return;
-    }
-
-    const hash = yield computeHash(details.url, 'sha1');
-
-    // Since we have no access to the PDF data, we have to fetch it again
-    // and hope it gets served from cache.
-    // TODO come up with something smarter here
-    const documentId = yield searchDocument({ pdfHash: hash });
-    yield getDiscussions(documentId, details.tabId);
-    responseData(details.tabId);
-  }),
-  {
-    types: ['main_frame'],
-  },
-  ['responseHeaders']
-);
-*/
 
 // DOI checker
 chrome.webNavigation.onCompleted.addListener(
