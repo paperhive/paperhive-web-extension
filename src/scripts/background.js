@@ -72,6 +72,13 @@ function updateIcon(docData, tabId) {
   }
 }
 
+function resetBadge(tabId) {
+  chrome.browserAction.setBadgeText({
+    text: '',
+    tabId,
+  });
+}
+
 function updateBadge(numDiscussions, tabId) {
   if (numDiscussions > 0) {
     // chrome.browserAction.setBadgeBackgroundColor([255, 0, 0, 255]);
@@ -218,21 +225,17 @@ chrome.tabs.onRemoved.addListener(
 // little bit later, namely at onCommitted.
 chrome.webNavigation.onCommitted.addListener(
   co.wrap(function* chain(details) {
-    const parsedUrl = url.parse(details.url);
     if (details.frameId !== 0) {
       // Don't do anything if we're not in the main frame.
       return;
     }
 
-    if (documentData[details.tabId]) {
-      // don't do anything if we already have document data for the tab
-      return;
-    }
-
     // This is done automatically by Chrome, but not by Firefox.
     setGrayIcon(details.tabId);
+    resetBadge(details.tabId);
     delete documentData[details.tabId];
 
+    const parsedUrl = url.parse(details.url);
     if (whitelistedHostnames.indexOf(parsedUrl.hostname) === -1) {
       // Don't do anything if the hostname isn't whitelisted.
       return;
