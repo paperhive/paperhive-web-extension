@@ -27,10 +27,10 @@
     "clean": "rm -rf build && rm -f paperhive.zip paperhive.xpi"
   },
   "dependencies": {
-    "angular": "1.5.0",
+    "angular": "1.5.3",
     "angular-moment": "0.10.3",
     "co": "4.6.0",
-    "paperhive-sources": "4.0.2",
+    "paperhive-sources": "5.0.0",
     "qs": "6.1.0"
   },
   "devDependencies": {
