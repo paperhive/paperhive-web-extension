@@ -8,7 +8,7 @@ Status](https://gemnasium.com/paperhive/paperhive-web-extension.svg)](https://ge
 The extension can be installed for both
 
  * [Chrome/Chromium](https://chrome.google.com/webstore/detail/paperhive/fihafdlllifbanclcjljledeifcdjbok) and
- * [Firefox](https://addons.mozilla.org/en-US/developers/addon/paperhive/).
+ * [Firefox](https://addons.mozilla.org/en-US/firefox/addon/paperhive/).
 
 
 ##Build instructions
