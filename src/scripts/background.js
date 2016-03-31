@@ -58,7 +58,7 @@ function updateIcon(docData, tabId) {
   }
 
   if (!docData.revisions[docData.indices.thisRevision].isOpenAccess &&
-      docData.indices.newestOa > -1) {
+      docData.indices.latestOa > -1) {
     setOaIcon(tabId);
   } else {
     setColorIcon(tabId);
@@ -123,7 +123,7 @@ const searchDocument = co.wrap(function* main(query) {
     // store a bunch of indices along with allRevisions
     indices: {
       thisRevision: _.findLastIndex(all.revisions, { revision: thisRevision.revision }),
-      newestOa: _.findLastIndex(all.revisions, { isOpenAccess: true }),
+      latestOa: _.findLastIndex(all.revisions, { isOpenAccess: true }),
     },
   };
 });
@@ -148,7 +148,7 @@ const getDocument = co.wrap(function* main(documentId, revisionId) {
     // store a bunch of indices along with allRevisions
     indices: {
       thisRevision: thisRevisionIdx,
-      newestOa: thisRevisionIdx,
+      latestOa: thisRevisionIdx,
     },
   };
 });

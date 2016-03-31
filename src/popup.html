@@ -49,20 +49,20 @@
     </div>
 
     <div ng-if="!document.revisions[document.indices.thisRevision].isOpenAccess
-         && document.indices.newestOa > 0"
+         && document.indices.latestOa > 0"
       class="alert alert-warning"
       role="alert">
       There is an <strong>open-access</strong> version of this article
       available via
-      {{document.revisions[document.indices.newestOa].remote.type}}
-      <span ng-if="document.revisions[document.indices.newestOa].volume">
-      , volume {{document.revisions[document.indices.newestOa].volume}}
+      {{document.revisions[document.indices.latestOa].remote.type}}
+      <span ng-if="document.revisions[document.indices.latestOa].volume">
+      , volume {{document.revisions[document.indices.latestOa].volume}}
       </span>
-      <span ng-if="document.revisions[document.indices.newestOa].issue">
-       , issue {{document.revisions[document.indices.newestOa].issue}}
+      <span ng-if="document.revisions[document.indices.latestOa].issue">
+       , issue {{document.revisions[document.indices.latestOa].issue}}
       </span>
-      <span ng-if="document.revisions[document.indices.newestOa].publishedAt">
-       (published {{document.revisions[document.indices.newestOa].publishedAt | date}}).
+      <span ng-if="document.revisions[document.indices.latestOa].publishedAt">
+       (published {{document.revisions[document.indices.latestOa].publishedAt | date}}).
       </span>
     </div>
 
@@ -117,7 +117,7 @@
     <footer class="ph-footer">
       <a id="link" target="_blank" role="button" class="btn btn-primary"
          ng-if="document.revisions"
-         ng-href="{{frontendUrl}}/documents/{{document.revisions[document.indices.thisRevision].id}}/revisions/{{document.revisions[document.indices.thisRevision].revision}}">
+         ng-href="{{frontendUrl}}/documents/{{document.revisions[document.indices.thisRevision].id}}/revisions/{{document.revisions[document.indices.latestOa].revision}}">
         Open in PaperHive
       </a>
 
