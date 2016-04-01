@@ -57,11 +57,12 @@ function updateIcon(docData, tabId) {
     return;
   }
 
-  if (!docData.revisions[docData.indices.thisRevision].isOpenAccess &&
-      docData.indices.latestOa > -1) {
-    setOaIcon(tabId);
-  } else {
-    setColorIcon(tabId);
+  if (docData.indices.latestOa !== -1) {
+    if (!docData.revisions[docData.indices.thisRevision].isOpenAccess) {
+      setOaIcon(tabId);
+    } else {
+      setColorIcon(tabId);
+    }
   }
 }
 
