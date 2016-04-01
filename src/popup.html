@@ -32,10 +32,13 @@
     <div ng-if="document.revisions[document.indices.thisRevision]" class="panel panel-default">
       <div class="panel-body">
         <h4>
-          <a ng-if="document.revisions[document.indices.thisRevision]"
+          <a ng-if="document.indices.latestOa !== -1"
              target="_blank"
-             ng-href="{{frontendUrl}}/documents/{{document.revisions[document.indices.thisRevision].id}}/revisions/{{document.revisions[document.indices.thisRevision].revision}}">
+             ng-href="{{frontendUrl}}/documents/{{document.revisions[document.indices.latestOa].id}}/revisions/{{document.revisions[document.indices.latestOa].revision}}">
             {{document.revisions[document.indices.thisRevision].title}}</a>
+          <span ng-if="document.indices.latestOa === -1">
+            {{document.revisions[document.indices.thisRevision].title}}
+          </span>
           <span ng-if="!document.revisions[document.indices.thisRevision]">
             {{document.revisions[document.indices.thisRevision].title}}
           </span>
@@ -130,11 +133,13 @@
 
     <footer class="ph-footer">
       <a id="link" target="_blank" role="button" class="btn btn-primary"
-         ng-if="document.revisions"
-         ng-disabled="document.indices.latestOa === -1"
+         ng-if="document.revisions && document.indices.latestOa !== -1"
          ng-href="{{frontendUrl}}/documents/{{document.revisions[document.indices.thisRevision].id}}/revisions/{{document.revisions[document.indices.latestOa].revision}}">
         Open in PaperHive
       </a>
+      <span ng-if="!document.revisions || document.indices.latestOa === -1">
+        This document cannot be opened in PaperHive yet.
+      </span>
 
       <a ng-if="!document.revisions"
          type="link"
