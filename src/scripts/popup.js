@@ -22,7 +22,14 @@ paperhive.controller('PopupCtrl', [
       // Translate a document to a nicely formatted string to be used in a
       // sentence.
       const components = [];
-      if (doc.publisher) {components.push(doc.publisher);}
+      if (doc.publisher) {
+        components.push(doc.publisher);
+      } else if (doc.remote.type === 'arxiv') {
+        components.push('arXiv');
+        if (doc.remote.revision) {
+          components.push(doc.remote.revision);
+        }
+      }
       if (doc.journal) {
         if (doc.journal.nameLong) {
           components.push(doc.journal.nameLong);
