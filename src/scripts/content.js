@@ -37,7 +37,7 @@ chrome.runtime.sendMessage(
   },
   (response) => {
     const thisRevision = response.revisions[response.indices.thisRevision];
-    if (!thisRevision.openAccess && response.indices.latestOa !== -1) {
+    if (!thisRevision.isOpenAccess && response.indices.latestOa !== -1) {
       // There is an open-access version of this article available
       const a = document.createElement('a');
       const latestOaRevision = response.revisions[response.indices.latestOa];
