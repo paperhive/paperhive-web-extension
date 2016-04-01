@@ -81,7 +81,7 @@
     <div ng-if="document.indices.thisRevision < document.revisions.length - 1"
       class="alert alert-warning"
       role="alert">
-      There is a more recent
+      There is a more recent ({{document.revisions[document.revisions.length - 1].publishedAt | date}})
       <strong ng-if="document.revisions[document.revisions.length - 1].isOpenAccess">
         open-access
       </strong>
