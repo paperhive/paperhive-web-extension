@@ -32,8 +32,8 @@ paperhive.controller('PopupCtrl', [
       }
       if (doc.volume) {components.push(`volume ${doc.volume}`);}
       if (doc.issue) {components.push(`issue ${doc.issue}`);}
-      if (doc.publishedat) {
-        components.push(`published at ${$filter('date')(doc.publishedat, '')}`);
+      if (doc.publishedAt) {
+        components.push(`published at ${$filter('date')(doc.publishedAt, '')}`);
       }
       return components.join(', ');
     };
