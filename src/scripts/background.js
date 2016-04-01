@@ -42,25 +42,12 @@ const setGrayIcon = (tabId) => {
   });
 };
 
-const setOaIcon = (tabId) => {
-  chrome.browserAction.setIcon({
-    path: {
-      19: 'images/icon-oa-19.png',
-      38: 'images/icon-oa-38.png',
-    },
-    tabId,
-  });
-};
-
 function updateIcon(docData, tabId) {
   if (!docData) {
     return;
   }
 
-  if (!docData.revisions[docData.indices.thisRevision].isOpenAccess &&
-      docData.indices.latestOa > -1) {
-    setOaIcon(tabId);
-  } else {
+  if (docData.indices.latestOa !== -1) {
     setColorIcon(tabId);
   }
 }

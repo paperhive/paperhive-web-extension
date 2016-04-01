@@ -32,10 +32,13 @@
     <div ng-if="document.revisions[document.indices.thisRevision]" class="panel panel-default">
       <div class="panel-body">
         <h4>
-          <a ng-if="document.revisions[document.indices.thisRevision]"
+          <a ng-if="document.indices.latestOa !== -1"
              target="_blank"
-             ng-href="{{frontendUrl}}/documents/{{document.revisions[document.indices.thisRevision].id}}/revisions/{{document.revisions[document.indices.thisRevision].revision}}">
+             ng-href="{{frontendUrl}}/documents/{{document.revisions[document.indices.latestOa].id}}/revisions/{{document.revisions[document.indices.latestOa].revision}}">
             {{document.revisions[document.indices.thisRevision].title}}</a>
+          <span ng-if="document.indices.latestOa === -1">
+            {{document.revisions[document.indices.thisRevision].title}}
+          </span>
           <span ng-if="!document.revisions[document.indices.thisRevision]">
             {{document.revisions[document.indices.thisRevision].title}}
           </span>
@@ -48,23 +51,32 @@
       </div>
     </div>
 
-    <div ng-if="!document.revisions[document.indices.thisRevision].isOpenAccess
-         && document.indices.latestOa > 0"
-      class="alert alert-warning"
-      role="alert">
-      There is an <strong>open-access</strong> version of this article
-      available via
-      {{document.revisions[document.indices.latestOa].remote.type}}
-      <span ng-if="document.revisions[document.indices.latestOa].volume">
-      , volume {{document.revisions[document.indices.latestOa].volume}}
-      </span>
-      <span ng-if="document.revisions[document.indices.latestOa].issue">
-       , issue {{document.revisions[document.indices.latestOa].issue}}
-      </span>
-      <span ng-if="document.revisions[document.indices.latestOa].publishedAt">
-       (published {{document.revisions[document.indices.latestOa].publishedAt | date}}).
-      </span>
-    </div>
+    <a
+      target="_blank"
+      ng-if="!document.revisions[document.indices.thisRevision].isOpenAccess
+           && document.indices.latestOa > 0"
+      ng-href="{{frontendUrl}}/documents/{{document.revisions[document.indices.latestOa].id}}/revisions/{{document.revisions[document.indices.latestOa].revision}}"
+      >
+      <div class="media alert alert-success">
+        <div class="media-left media-middle">
+          <img src="images/oa.svg" width="40px">
+        </div>
+        <div class="media-body">
+          There is an <strong>open-access</strong> version of this article
+          available via
+          {{document.revisions[document.indices.latestOa].remote.type}}
+          <span ng-if="document.revisions[document.indices.latestOa].volume">
+            , volume {{document.revisions[document.indices.latestOa].volume}}
+          </span>
+          <span ng-if="document.revisions[document.indices.latestOa].issue">
+            , issue {{document.revisions[document.indices.latestOa].issue}}
+          </span>
+          <span ng-if="document.revisions[document.indices.latestOa].publishedAt">
+            (published {{document.revisions[document.indices.latestOa].publishedAt | date}}).
+          </span>
+        </div>
+      </div>
+    </a>
 
     <div ng-if="document.indices.thisRevision < document.revisions.length - 1"
       class="alert alert-warning"
@@ -81,7 +93,12 @@
       >
       <div class="panel-heading">
         <strong>
-          <i class="fa fa-comment"></i> {{document.discussions.length}} open discussions
+          <span ng-if="document.discussions.length === 1">
+            <i class="fa fa-comment"></i> {{document.discussions.length}} open discussion
+          </span>
+          <span ng-if="document.discussions.length !== 1">
+            <i class="fa fa-comment"></i> {{document.discussions.length}} open discussions
+          </span>
         </strong>
       </div>
       <ul class="list-group">
@@ -104,7 +121,7 @@
                <span am-time-ago="discussion.createdAt"></span>
                by
                <a target="_blank"
-                 ng-href="{{frontendUrl}}/users/{{discussion.author.user.username}}"
+                 ng-href="{{frontendUrl}}/users/{{discussion.author.account.username}}"
                  >
                  {{discussion.author.displayName}}
                </a>
@@ -116,10 +133,13 @@
 
     <footer class="ph-footer">
       <a id="link" target="_blank" role="button" class="btn btn-primary"
-         ng-if="document.revisions"
+         ng-if="document.revisions && document.indices.latestOa !== -1"
          ng-href="{{frontendUrl}}/documents/{{document.revisions[document.indices.thisRevision].id}}/revisions/{{document.revisions[document.indices.latestOa].revision}}">
         Open in PaperHive
       </a>
+      <span ng-if="!document.revisions || document.indices.latestOa === -1">
+        This document cannot be opened in PaperHive yet.
+      </span>
 
       <a ng-if="!document.revisions"
          type="link"
