@@ -89,7 +89,12 @@
       >
       <div class="panel-heading">
         <strong>
-          <i class="fa fa-comment"></i> {{document.discussions.length}} open discussions
+          <span ng-if="document.discussions.length === 1">
+            <i class="fa fa-comment"></i> {{document.discussions.length}} open discussion
+          </span>
+          <span ng-if="document.discussions.length !== 1">
+            <i class="fa fa-comment"></i> {{document.discussions.length}} open discussions
+          </span>
         </strong>
       </div>
       <ul class="list-group">
