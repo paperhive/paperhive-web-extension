@@ -49,9 +49,10 @@
     </div>
 
     <a
-      href="http://www.spiegel.de"
+      target="_blank"
       ng-if="!document.revisions[document.indices.thisRevision].isOpenAccess
            && document.indices.latestOa > 0"
+      ng-href="{{frontendUrl}}/documents/{{document.revisions[document.indices.latestOa].id}}/revisions/{{document.revisions[document.indices.latestOa].revision}}"
       >
       <div class="media alert alert-success">
         <div class="media-left media-middle">
