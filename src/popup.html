@@ -137,7 +137,7 @@
          ng-href="{{frontendUrl}}/documents/{{document.revisions[document.indices.thisRevision].id}}/revisions/{{document.revisions[document.indices.latestOa].revision}}">
         Open in PaperHive
       </a>
-      <span ng-if="document.revisions || document.indices.latestOa === -1">
+      <span ng-if="document.revisions && document.indices.latestOa === -1">
         This document cannot be opened in PaperHive yet.
       </span>
 
