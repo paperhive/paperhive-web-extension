@@ -1,6 +1,6 @@
 {
   "name": "paperhive-chrome-extension",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "license": "GPL-3.0",
   "description": "Browser extension for PaperHive",
   "manifest_version": 2,
@@ -15,12 +15,12 @@
     "htmlhint": "./node_modules/.bin/htmlhint src/",
     "meta": "mkdir -p build && cp -r src/_locales/ build/",
     "meta:firefox": "npm run meta && cp src/manifest.json.firefox build/manifest.json",
-    "meta:chrome":  "npm run meta && cp src/manifest.json.chrome  build/manifest.json",
+    "meta:chrome": "npm run meta && cp src/manifest.json.chrome  build/manifest.json",
     "images": "mkdir -p build/images && cp src/images/*png build/images && optipng --quiet build/images/*png",
     "js": "./node_modules/.bin/webpack",
     "build": "npm run images && npm run js",
     "build:firefox": "npm run meta:firefox && npm run build",
-    "build:chrome":  "npm run meta:chrome  && npm run build",
+    "build:chrome": "npm run meta:chrome  && npm run build",
     "zip": "rm -f paperhive.zip && npm run build:chrome  && zip -r paperhive.zip build/",
     "xpi": "rm -f paperhive.xpi && npm run build:firefox && cd build && zip -r ../paperhive.xpi * && cd ..",
     "watch": "./node_modules/.bin/webpack --progress --colors --watch",
@@ -46,6 +46,7 @@
     "less-loader": "^2.2.2",
     "lodash": "^4.0.0",
     "null-loader": "^0.1.1",
+    "optipng": "^1.0.0",
     "webpack": "^1.12.12"
   },
   "engines": {

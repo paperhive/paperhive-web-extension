@@ -76,7 +76,7 @@ const searchDocument = co.wrap(function* main(query) {
   // Get only the most recent revision matching the query
   q.sortBy = '-publishedAt';
   q.limit = 1;
-  const response = yield fetch(`${config.apiUrl}/documents?${qs.stringify(q)}`);
+  const response = yield fetch(`${config.apiUrl}/documents/search?${qs.stringify(q)}`);
   if (!response.ok) {
     throw Error('document GET unsuccessful');
   }
