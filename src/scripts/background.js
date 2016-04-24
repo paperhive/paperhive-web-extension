@@ -125,7 +125,7 @@ const getDocument = co.wrap(function* main(documentId, revisionId) {
 
   // On paperhive.org, only OA revisions are displayed.
   const search = { isOpenAccess: true };
-  if (revisionId) {search.revision = revisionId;}
+  if (revisionId) search.revision = revisionId;
 
   const thisRevisionIdx = _.findLastIndex(all.revisions, search);
 
@@ -274,7 +274,7 @@ chrome.webNavigation.onCompleted.addListener(
     }
 
     const searchDoiOnPaperhive = co.wrap(function* search(doi) {
-      if (!doi) {return;}
+      if (!doi) return;
       const docData = yield searchDocument({ doi });
       const documentId = docData.revisions[docData.indices.thisRevision].id;
       const disc = yield getDiscussions(documentId);
