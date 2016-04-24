@@ -37,8 +37,8 @@ paperhive.controller('PopupCtrl', [
           components.push(doc.journal.nameShort);
         }
       }
-      if (doc.volume) {components.push(`volume ${doc.volume}`);}
-      if (doc.issue) {components.push(`issue ${doc.issue}`);}
+      if (doc.volume) components.push(`volume ${doc.volume}`);
+      if (doc.issue) components.push(`issue ${doc.issue}`);
       if (doc.publishedAt) {
         components.push(`published at ${$filter('date')(doc.publishedAt, '')}`);
       }
