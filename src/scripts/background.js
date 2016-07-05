@@ -10,14 +10,12 @@ const url = require('url');
 
 const config = require('../../config.json');
 
-const whitelistedHostnames =
-  [
-    'arxiv.org',
-    'link.springer.com',
-    'beta.paperhive.org',
-    'paperhive.org',
-  ];
-
+const whitelistedHostnames = [
+  /arxiv\.org$/,
+  /sciencedirect\.com$/,
+  /^link\.springer\.com$/,
+  /paperhive\.org$/,
+];
 
 const documentData = {};
 const responseSender = {};
@@ -63,8 +61,7 @@ function updateBadge(numDiscussions, tabId) {
   if (numDiscussions > 0) {
     // chrome.browserAction.setBadgeBackgroundColor([255, 0, 0, 255]);
     chrome.browserAction.setBadgeText({
-      text: numDiscussions < 1000 ?
-        numDiscussions.toString() : '999+',
+      text: numDiscussions < 1000 ? numDiscussions.toString() : '999+',
       tabId,
     });
   }
@@ -195,38 +192,22 @@ chrome.webNavigation.onCommitted.addListener(
     delete documentData[details.tabId];
 
     const parsedUrl = url.parse(details.url);
-    if (whitelistedHostnames.indexOf(parsedUrl.hostname) === -1) {
-      // Don't do anything if the hostname isn't whitelisted.
-      return;
-    }
+
+    // Don't do anything if the hostname isn't whitelisted.
+    if (!_.some(whitelistedHostnames, re => re.test(parsedUrl.hostname))) return;
 
     // First check if we're on PaperHive itself.
     let docData;
-    if (['beta.paperhive.org', 'paperhive.org'].indexOf(parsedUrl.hostname) !== -1) {
-      // Extract document id and revision id from URL.  This assumes a format
-      // like
-      //
-      //   /documents/<documentId>
-      //
-      // or
-      //
-      //   /documents/<documentId>/revisions/<revisionId>
-      //
-      const pieces = parsedUrl.path.split('/');
+    if (/paperhive\.org$/.test(parsedUrl.hostname)) {
+      // Extract document id and revision id from URL.This assumes a URL like
+      //      /documents/<documentId>
+      //   or /documents/<documentId>/revisions/<revisionId>
+      const matches = /\/documents\/([^\/]+)(?:\/revisions\/([^\/]+))?\/?$/
+        .exec(parsedUrl.path);
 
-      const docIdx = pieces.indexOf('documents');
-      if (docIdx + 1 > pieces.length) {
-        // invalid url
-        return;
-      }
-      const documentId = pieces[docIdx + 1];
+      if (!matches) return;
 
-      const revisionIdx = pieces.indexOf('revisions');
-      const revisionId = (revisionIdx + 1 <= pieces.length) ?
-        pieces[revisionIdx + 1] :
-        undefined;
-
-      docData = yield getDocument(documentId, revisionId, details.tabId);
+      docData = yield getDocument(matches[1], matches[2]);
     } else {
       // Check if the URL indeed represents a valid remote.
       const remote = sources.parseUrl(details.url);
@@ -264,14 +245,10 @@ chrome.webNavigation.onCompleted.addListener(
     // represent the DOI of the currently focused article, but a "related"
     // version.
     const parsedUrl = url.parse(details.url);
-    if (['arxiv.org'].indexOf(parsedUrl.hostname) !== -1) {
-      return;
-    }
+    if (['arxiv.org'].indexOf(parsedUrl.hostname) !== -1) return;
 
-    if (documentData[details.tabId]) {
-      // don't do anything if we already have document data for the tab
-      return;
-    }
+    // don't do anything if we already have document data for the tab
+    if (documentData[details.tabId]) return;
 
     const searchDoiOnPaperhive = co.wrap(function* search(doi) {
       if (!doi) return;
