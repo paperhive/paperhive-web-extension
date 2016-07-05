@@ -1,5 +1,5 @@
 {
-  "frontendUrl": "https://beta.paperhive.org",
-  "apiUrl": "https://beta.paperhive.org/api/",
+  "frontendUrl": "https://paperhive.org",
+  "apiUrl": "https://paperhive.org/api",
   "apiVersion": "0.0.0"
 }
