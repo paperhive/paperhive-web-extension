@@ -14,13 +14,19 @@ const urlParse = require('url').parse;
 
 const config = require('../../config.json');
 
-const whitelistedHostnames = [
-  /arxiv\.org$/,
-  /^oapen.org/,
-  /^link\.springer\.com$/,
-  /paperhive\.org$/,
-  /sciencedirect\.com$/,
-];
+const whitelist = [{
+  host: /arxiv\.org$/,
+  testUrl: true,
+}, {
+  host: /^oapen.org/,
+  testUrl: true,
+}, {
+  host: /^link\.springer\.com$/,
+  testExtractors: ['metaCitationDoi'],
+}, {
+  host: /sciencedirect\.com$/,
+  testExtractors: ['aDoi'],
+}];
 
 function getShortNumber(number) {
   if (number < 1e3) return number.toString();
@@ -29,8 +35,7 @@ function getShortNumber(number) {
   return '>1e9';
 }
 
-const getDocumentByRemote = co.wrap(function* getDocumentByRemote(type, id) {
-  const remote = { type, id };
+const getDocumentByRemote = co.wrap(function* getDocumentByRemote(remote) {
   const response =
     yield fetch(`${config.apiUrl}/documents/remote?${qs.stringify(remote)}`);
   if (response.status === 404) return undefined;
@@ -117,29 +122,70 @@ class Tab {
       // parse the tab url
       const parsedUrl = urlParse(url);
 
-      // Don't do anything if the hostname isn't whitelisted.
-      if (!_.some(whitelistedHostnames, re => re.test(parsedUrl.hostname))) return;
-
+      // are we on PaperHive?
       if (/paperhive\.org$/.test(parsedUrl.hostname)) {
-        // we're on PaperHive itself; Extract document id and revision id from URL.
-        // This assumes a path of the form /documents/<documentId>*
+        // match a document path of the form /documents/<documentId>*
         const matches = /\/documents\/([^\/]+)(?:[\/?].*)?$/
           .exec(parsedUrl.path);
         if (matches) {
           yield self._updateDocument(matches[1]);
           return;
         }
-      } else {
+      }
+
+      // don't do anything if the hostname isn't whitelisted.
+      const whitelistMatch =
+        _.find(whitelist, test => test.host.test(parsedUrl.hostname));
+      if (!whitelistMatch) return;
+
+      if (whitelistMatch.testUrl) {
         // let the PaperHive API determine if this URL resolves to a document
         // on PaperHive
-        const doc = yield getDocumentByRemote('url', url);
+        const doc = yield getDocumentByRemote({ type: 'url', id: url });
         if (doc) {
           yield self._updateDocument(doc.id);
           return;
         }
       }
+    });
+  }
 
-      // TODO: add other checks (e.g., doi extraction)
+  onCompleted() {
+    const self = this;
+    return co(function* _onCompleted() {
+      // do nothing if we already have documentData set
+      if (self.documentData) return;
+
+      const tab = yield new Promise(resolve => chrome.tabs.get(self.tabId, resolve));
+
+      if (!tab || !tab.url) return;
+
+      // parse the tab url
+      const parsedUrl = urlParse(tab.url);
+
+      // don't do anything if the hostname isn't whitelisted.
+      const whitelistMatch =
+        _.find(whitelist, test => test.host.test(parsedUrl.hostname));
+      if (!whitelistMatch) return;
+
+      if (whitelistMatch.testExtractors) {
+        const remote = yield new Promise((resolve, reject) => {
+          chrome.tabs.sendMessage(
+            self.tabId,
+            {
+              command: 'extractRemote',
+              data: { extractors: whitelistMatch.testExtractors },
+            },
+            resolve
+          );
+        });
+
+        if (remote) {
+          const doc = yield getDocumentByRemote(remote);
+          yield self._updateDocument(doc.id);
+          return;
+        }
+      }
     });
   }
 }
@@ -189,6 +235,12 @@ function onUrlChange(details) {
 chrome.webNavigation.onCommitted.addListener(onUrlChange);
 chrome.webNavigation.onHistoryStateUpdated.addListener(onUrlChange);
 
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (!tabId || !tabs[tabId]) return;
+  if (changeInfo.status === 'complete') {
+    safeCall(tabId, 'onCompleted');
+  }
+});
 
 // ****************************************************************************
 // tab event handlers

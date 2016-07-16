@@ -1,33 +1,49 @@
 'use strict';
 
 // for webpack
-require('../styles/content.less');
+// require('../styles/content.less');
 
 const config = require('../../config.json');
 
-const getMetaValue = (keys) => {
-  // Extract the value of a given meta key. If more than one key is given, it
-  // returns the value of the first key it finds.
-  const metas = document.getElementsByTagName('meta');
-  for (let i = 0; i < keys.length; i++) {
-    // namedItem() should be case insensitive, cf.
-    // <http://www.w3.org/TR/DOM-Level-2-HTML/html.html>
-    const item = metas.namedItem(keys[i]);
-    if (item) {
-      const content = item.getAttribute('content');
-      if (content) {
-        return content;
-      }
-    }
-  }
-  return null;
+const extractors = {
+  metaCitationDoi: () => {
+    if (!document.head) return undefined;
+    const meta = document.head.querySelector('meta[name=citation_doi]');
+    if (!meta) return undefined;
+    return { type: 'doi', id: meta.content };
+  },
+  aDoi: () => {
+    const a = document.querySelector('a[href*="doi.org/" i]');
+    if (!a) return undefined;
+    const match = /^https?:\/\/(?:dx\.)?doi\.org\/(.*)$/i.exec(a.href);
+    if (!match) return undefined;
+    return { type: 'doi', id: match[1] };
+  },
+  // TODO: prism, highwire, dc (doi, isbn, ...)
 };
 
+const defaultExtractorNames = ['metaCitationDoi', 'aDoi'];
+
+function extractRemote(_extractorNames) {
+  const extractorNames =
+    _extractorNames === 'default' ? defaultExtractorNames : _extractorNames;
+  for (const extractorName of extractorNames || defaultExtractorNames) {
+    const extractor = extractors[extractorName];
+    if (!extractor) throw new Error(`extractor ${extractorName} does not exist`);
+    const remote = extractor();
+    if (remote) return remote;
+  }
+  return undefined;
+}
+
 // Listen for messages
-chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-  // If the received message has the expected format...
-  if (msg.keys) {
-    sendResponse(getMetaValue(msg.keys));
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  switch (request.command) {
+    case 'extractRemote':
+      sendResponse(extractRemote(request.data.extractors));
+      break;
+    default:
+      throw new Error(`command ${request.command} is unknown`);
   }
 });
 
