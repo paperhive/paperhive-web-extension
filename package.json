@@ -32,7 +32,6 @@
     "babel-polyfill": "^6.9.1",
     "co": "4.6.0",
     "mutx": "^0.1.1",
-    "paperhive-sources": "5.0.0",
     "qs": "6.1.0"
   },
   "devDependencies": {

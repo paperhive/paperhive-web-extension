@@ -9,7 +9,6 @@ const co = require('co');
 const crypto = require('crypto');
 const _ = require('lodash');
 const mutx = require('mutx');
-const sources = require('paperhive-sources')();
 const qs = require('qs');
 const urlParse = require('url').parse;
 
