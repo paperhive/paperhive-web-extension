@@ -21,7 +21,7 @@
     "build": "npm run images && npm run js",
     "build:firefox": "npm run meta:firefox && npm run build",
     "build:chrome": "npm run meta:chrome  && npm run build",
-    "zip": "rm -f paperhive.zip && npm run build:chrome  && zip -r paperhive.zip build/",
+    "zip": "rm -f paperhive.zip && npm run build:chrome && cd build && zip -r ../paperhive.zip * && cd ..",
     "xpi": "rm -f paperhive.xpi && npm run build:firefox && cd build && zip -r ../paperhive.xpi * && cd ..",
     "watch": "./node_modules/.bin/webpack --progress --colors --watch",
     "clean": "rm -rf build && rm -f paperhive.zip paperhive.xpi"

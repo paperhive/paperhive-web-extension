@@ -1,8 +1,5 @@
 'use strict';
 
-// for webpack
-// require('../styles/content.less');
-
 const config = require('../../config.json');
 
 const extractors = {
