@@ -30,12 +30,6 @@ function getShortNumber(number) {
   return '>1e9';
 }
 
-const getDocumentById = co.wrap(function* getDocumentById(documentId) {
-  const response = yield fetch(`${config.apiUrl}/documents/${documentId}`);
-  if (!response.ok) throw new Error('document GET unsuccessful');
-  return yield response.json();
-});
-
 const getDocumentByRemote = co.wrap(function* getDocumentByRemote(type, id) {
   const remote = { type, id };
   const response =
@@ -43,6 +37,13 @@ const getDocumentByRemote = co.wrap(function* getDocumentByRemote(type, id) {
   if (response.status === 404) return undefined;
   if (!response.ok) throw new Error(`Unsuccessful request: ${response.statusText}`);
   return yield response.json();
+});
+
+const getDocumentRevisions = co.wrap(function* getDocumentRevisions(docId) {
+  const response = yield fetch(`${config.apiUrl}/documents/${docId}/revisions/`);
+  if (!response.ok) throw new Error('revisions GET unsuccessful');
+  const body = yield response.json();
+  return body.revisions;
 });
 
 const getDiscussions = co.wrap(function* getDiscussions(documentId) {
@@ -79,11 +80,11 @@ class Tab {
   _reset() {
     this._updateIcon();
     this._updateBadge();
-    delete this.document;
+    delete this.revisions;
     delete this.discussions;
   }
 
-  _updateDocument(doc) {
+  _updateDocument(docId) {
     const self = this;
     return co(function* _updateDocument() {
       // TODO: remove?
@@ -91,11 +92,12 @@ class Tab {
       // (actual errors are thrown)
       // if (!doc) return;
 
-      // get discussions for the revision
-      const discussions = yield getDiscussions(doc.id);
+      // get all revisions and discussions
+      const [revisions, discussions] =
+        yield [getDocumentRevisions(docId), yield getDiscussions(docId)];
 
       // save data
-      self.document = doc;
+      self.revisions = revisions;
       self.discussions = discussions;
 
       // update icon+badge
@@ -121,22 +123,23 @@ class Tab {
       // Don't do anything if the hostname isn't whitelisted.
       if (!_.some(whitelistedHostnames, re => re.test(parsedUrl.hostname))) return;
 
-      let doc;
       if (/paperhive\.org$/.test(parsedUrl.hostname)) {
         // we're on PaperHive itself; Extract document id and revision id from URL.
         // This assumes a path of the form /documents/<documentId>*
         const matches = /\/documents\/([^\/]+)(?:[\/?].*)?$/
           .exec(parsedUrl.path);
-        if (matches) doc = yield getDocumentById(matches[1]);
+        if (matches) {
+          yield self._updateDocument(matches[1]);
+          return;
+        }
       } else {
         // let the PaperHive API determine if this URL resolves to a document
         // on PaperHive
-        doc = yield getDocumentByRemote('url', url);
-      }
-
-      if (doc) {
-        yield self._updateDocument(doc);
-        return;
+        const doc = yield getDocumentByRemote('url', url);
+        if (doc) {
+          yield self._updateDocument(doc.id);
+          return;
+        }
       }
 
       // TODO: add other checks (e.g., doi extraction)
