@@ -158,7 +158,6 @@ const tabMutexes = {};
 // note: event handlers must take care of locking/unlocking
 
 const safeCall = co.wrap(function* safeCall(tabId, methodName, ...args) {
-  console.log(tabId, methodName, ...args);
   const unlock = yield tabMutexes[tabId].lock();
   try {
     yield tabs[tabId][methodName].apply(tabs[tabId], args);
@@ -181,7 +180,6 @@ const safeCall = co.wrap(function* safeCall(tabId, methodName, ...args) {
 // setIcon() would sometimes have no effect. As a workaround, just run this a
 // little bit later, namely at onCommitted.
 function onUrlChange(details) {
-  console.log('onUrlChange', details.tabId, details.url);
   // Don't do anything if we're not in the main frame or if the tab has not
   // been set up
   if (details.frameId !== 0 || !tabs[details.tabId]) return;

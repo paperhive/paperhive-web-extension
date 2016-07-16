@@ -95,7 +95,6 @@ paperhive.controller('PopupCtrl', [
 
     // update latestRevision and hasOpenAccessRevision
     $scope.$watch('documentData', documentData => {
-      console.log(documentData);
       if (!documentData || !documentData.revisions) {
         $scope.latestRevision = undefined;
         return;
