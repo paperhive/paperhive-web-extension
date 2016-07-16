@@ -1,72 +1,239 @@
 'use strict';
 
+// TODO: get rid of the polyfill
+// required by mutx
+require('babel-polyfill');
+
 const buffer = require('buffer');
 const co = require('co');
 const crypto = require('crypto');
 const _ = require('lodash');
+const mutx = require('mutx');
 const sources = require('paperhive-sources')();
 const qs = require('qs');
-const url = require('url');
+const urlParse = require('url').parse;
 
 const config = require('../../config.json');
 
 const whitelistedHostnames = [
   /arxiv\.org$/,
-  /sciencedirect\.com$/,
+  /^oapen.org/,
   /^link\.springer\.com$/,
   /paperhive\.org$/,
+  /sciencedirect\.com$/,
 ];
 
-const documentData = {};
-const responseSender = {};
-
-const setColorIcon = (tabId) => {
-  chrome.browserAction.setIcon({
-    path: {
-      19: 'images/icon-19.png',
-      38: 'images/icon-38.png',
-    },
-    tabId,
-  });
-};
-
-const setGrayIcon = (tabId) => {
-  chrome.browserAction.setIcon({
-    path: {
-      19: 'images/icon-gray-19.png',
-      38: 'images/icon-gray-38.png',
-    },
-    tabId,
-  });
-};
-
-function updateIcon(docData, tabId) {
-  if (!docData) {
-    return;
-  }
-
-  if (docData.indices.latestOa !== -1) {
-    setColorIcon(tabId);
-  }
+function getShortNumber(number) {
+  if (number < 1e3) return number.toString();
+  if (number < 1e6) return `${Math.floor(number / 1e3)}K`;
+  if (number < 1e9) return `${Math.floor(number / 1e6)}M`;
+  return '>1e9';
 }
 
-function resetBadge(tabId) {
-  chrome.browserAction.setBadgeText({
-    text: '',
-    tabId,
-  });
-}
+const getDocumentById = co.wrap(function* getDocumentById(documentId) {
+  const response = yield fetch(`${config.apiUrl}/documents/${documentId}`);
+  if (!response.ok) throw new Error('document GET unsuccessful');
+  return yield response.json();
+});
 
-function updateBadge(numDiscussions, tabId) {
-  if (numDiscussions > 0) {
-    // chrome.browserAction.setBadgeBackgroundColor([255, 0, 0, 255]);
+const getDocumentByRemote = co.wrap(function* getDocumentByRemote(type, id) {
+  const remote = { type, id };
+  const response =
+    yield fetch(`${config.apiUrl}/documents/remote?${qs.stringify(remote)}`);
+  if (response.status === 404) return undefined;
+  if (!response.ok) throw new Error(`Unsuccessful request: ${response.statusText}`);
+  return yield response.json();
+});
+
+const getDiscussions = co.wrap(function* getDiscussions(documentId) {
+  // fetch discussions
+  const response =
+    yield fetch(`${config.apiUrl}/documents/${documentId}/discussions/`);
+  if (!response.ok) throw new Error('discussion GET unsuccessful');
+  const body = yield response.json();
+  return body.discussions;
+});
+
+// ****************************************************************************
+// Tab class represents the state of a tab
+class Tab {
+  constructor(tabId) {
+    this.tabId = tabId;
+  }
+
+  _updateIcon(color) {
+    const prefix = `images/icon-${color ? '' : 'gray-'}`;
+    chrome.browserAction.setIcon({
+      path: { 19: `${prefix}19.png`, 38: `${prefix}38.png` },
+      tabId: this.tabId,
+    });
+  }
+
+  _updateBadge(number) {
     chrome.browserAction.setBadgeText({
-      text: numDiscussions < 1000 ? numDiscussions.toString() : '999+',
-      tabId,
+      text: number ? getShortNumber(number) : '',
+      tabId: this.tabId,
+    });
+  }
+
+  _reset() {
+    this._updateIcon();
+    this._updateBadge();
+    delete this.document;
+    delete this.discussions;
+  }
+
+  _updateDocument(doc) {
+    const self = this;
+    return co(function* _updateDocument() {
+      // TODO: remove?
+      // silently stop processing if no document is given
+      // (actual errors are thrown)
+      // if (!doc) return;
+
+      // get discussions for the revision
+      const discussions = yield getDiscussions(doc.id);
+
+      // save data
+      self.document = doc;
+      self.discussions = discussions;
+
+      // update icon+badge
+      self._updateIcon(true);
+      self._updateBadge(discussions.length);
+
+      // TODO: do we need this?
+      // notify tab
+      // responseData(tabId);
+    });
+  }
+
+  onUrlChange(url) {
+    const self = this;
+    return co(function* _onUrlChange() {
+      self._reset();
+
+      if (!url) return;
+
+      // parse the tab url
+      const parsedUrl = urlParse(url);
+
+      // Don't do anything if the hostname isn't whitelisted.
+      if (!_.some(whitelistedHostnames, re => re.test(parsedUrl.hostname))) return;
+
+      let doc;
+      if (/paperhive\.org$/.test(parsedUrl.hostname)) {
+        // we're on PaperHive itself; Extract document id and revision id from URL.
+        // This assumes a path of the form /documents/<documentId>*
+        const matches = /\/documents\/([^\/]+)(?:[\/?].*)?$/
+          .exec(parsedUrl.path);
+        if (matches) doc = yield getDocumentById(matches[1]);
+      } else {
+        // let the PaperHive API determine if this URL resolves to a document
+        // on PaperHive
+        doc = yield getDocumentByRemote('url', url);
+      }
+
+      if (doc) {
+        yield self._updateDocument(doc);
+        return;
+      }
+
+      // TODO: add other checks (e.g., doi extraction)
     });
   }
 }
 
+// ****************************************************************************
+// state variables
+
+// tabs maps tabIds to Tab instances
+const tabs = {};
+
+// tabMutexes maps tabIds to mutexes for guaranteed mutual exclusive access
+const tabMutexes = {};
+
+// ****************************************************************************
+// in-tab event handlers
+// note: event handlers must take care of locking/unlocking
+
+const safeCall = co.wrap(function* safeCall(tabId, methodName, ...args) {
+  console.log(tabId, methodName, ...args);
+  const unlock = yield tabMutexes[tabId].lock();
+  try {
+    yield tabs[tabId][methodName].apply(tabs[tabId], args);
+  } catch (error) {
+    console.error(error);
+  }
+  unlock();
+});
+
+// TODO: use event filters when firefox supports them
+// Not supported in Firefox, cf.
+// <https://bugzilla.mozilla.org/show_bug.cgi?id=1242522>.
+// ,{
+//   url: urlFilter,
+//   types: ['main_frame'],
+// }
+
+// We could actually handle this already at onBeforeNavigate, but Chrome
+// appartently redraws the extension icons at that time, too. This way,
+// setIcon() would sometimes have no effect. As a workaround, just run this a
+// little bit later, namely at onCommitted.
+function onUrlChange(details) {
+  console.log('onUrlChange', details.tabId, details.url);
+  // Don't do anything if we're not in the main frame or if the tab has not
+  // been set up
+  if (details.frameId !== 0 || !tabs[details.tabId]) return;
+
+  safeCall(details.tabId, 'onUrlChange', details.url);
+}
+chrome.webNavigation.onCommitted.addListener(onUrlChange);
+chrome.webNavigation.onHistoryStateUpdated.addListener(onUrlChange);
+
+
+// ****************************************************************************
+// tab event handlers
+function setupTab(tabId) {
+  // set up tab only once
+  if (tabs[tabId]) return;
+
+  tabs[tabId] = new Tab(tabId);
+  tabMutexes[tabId] = new mutx.Mutex();
+
+  // kick off url change
+  chrome.tabs.get(tabId, tab => safeCall(tabId, 'onUrlChange', tab.url));
+}
+
+function removeTab(tabId) {
+  // tab may not be set up
+  if (!tabs[tabId]) return;
+
+  // make sure we do not interfere with a running operation
+  tabMutexes[tabId].lock().then(unlock => {
+    delete tabs[tabId];
+    delete tabMutexes[tabId];
+    unlock();
+  });
+}
+
+// setup Tab instance when tab is activated
+chrome.tabs.onActivated.addListener(active => setupTab(active.tabId));
+
+// setup Tab instance for existing active tabs
+chrome.tabs.query(
+  { active: true },
+  _tabs => _tabs.forEach(tab => setupTab(tab.id))
+);
+
+chrome.tabs.onReplaced.addListener((addedTab, removedTag) => {
+  console.log('replace', addedTab, removedTag);
+});
+
+// clean up after tab close (wait until all pending actions completed)
+chrome.tabs.onRemoved.addListener(tabId => removeTab(tabId));
+
+/*
 const searchDocument = co.wrap(function* main(query) {
   // build query
   const q = _.clone(query);
@@ -111,46 +278,10 @@ const searchDocument = co.wrap(function* main(query) {
     },
   };
 });
+*/
 
-const getDocument = co.wrap(function* main(documentId, revisionId) {
-  // Get all revisions of the document; they come in chronological order
-  const response = yield fetch(`${config.apiUrl}/documents/${documentId}/revisions/`);
-  if (!response.ok) {
-    throw Error('document GET unsuccessful');
-  }
-  const all = yield response.json();
-
-  // On paperhive.org, only OA revisions are displayed.
-  const search = { isOpenAccess: true };
-  if (revisionId) search.revision = revisionId;
-
-  const thisRevisionIdx = _.findLastIndex(all.revisions, search);
-
-  // set tab data for communication with the popup script
-  return {
-    revisions: all.revisions,
-    // store a bunch of indices along with allRevisions
-    indices: {
-      thisRevision: thisRevisionIdx,
-      latestOa: thisRevisionIdx,
-    },
-  };
-});
-
-const getDiscussions = co.wrap(function* main(documentId) {
-  if (!documentId) {
-    return undefined;
-  }
-  // fetch discussions
-  const discUrl = `${config.apiUrl}/documents/${documentId}/discussions/`;
-  const response = yield fetch(discUrl);
-  if (!response.ok) {
-    throw Error('discussion GET unsuccessful');
-  }
-  const res = yield response.json();
-
-  return res.discussions;
-});
+/*
+const responseSender = {};
 
 const responseData = (tabId) => (err) => {
   if (err) {
@@ -162,141 +293,49 @@ const responseData = (tabId) => (err) => {
   // Fulfill the promise and remove the sender afterwards.
   if (responseSender[tabId]) {
     // send the data
-    responseSender[tabId](documentData[tabId]);
+    responseSender[tabId](tabs[tabId]);
     // remove the dangling request
     delete responseSender[tabId];
   }
 };
 
-// clean up after tab close
-chrome.tabs.onRemoved.addListener(
-  (tabId) => {
-    delete documentData[tabId];
-  }
-);
+// scan document content for remotes
+// TODO: send generic 'scanRemote' message (instead of DOI request)
+chrome.webNavigation.onCompleted.addListener(details => {
+  // don't do anything if we're not in the main frame
+  if (details.frameId !== 0) return;
 
-// We could actually handle all this already at onBeforeNavigate, but Chrome
-// appartently redraws the extension icons at that time, too. This way, the
-// setColorIcon would sometimes have no effect. As a workaround, just draw a
-// little bit later, namely at onCommitted.
-chrome.webNavigation.onCommitted.addListener(
-  co.wrap(function* chain(details) {
-    if (details.frameId !== 0) {
-      // Don't do anything if we're not in the main frame.
-      return;
-    }
+  // don't do anything if we already have document data for the tab
+  if (tabs[details.tabId]) return;
 
-    // This is done automatically by Chrome, but not by Firefox.
-    setGrayIcon(details.tabId);
-    resetBadge(details.tabId);
-    delete documentData[details.tabId];
-
-    const parsedUrl = url.parse(details.url);
-
-    // Don't do anything if the hostname isn't whitelisted.
-    if (!_.some(whitelistedHostnames, re => re.test(parsedUrl.hostname))) return;
-
-    // First check if we're on PaperHive itself.
-    let docData;
-    if (/paperhive\.org$/.test(parsedUrl.hostname)) {
-      // Extract document id and revision id from URL.This assumes a URL like
-      //      /documents/<documentId>
-      //   or /documents/<documentId>/revisions/<revisionId>
-      const matches = /\/documents\/([^\/]+)(?:\/revisions\/([^\/]+))?\/?$/
-        .exec(parsedUrl.path);
-
-      if (!matches) return;
-
-      docData = yield getDocument(matches[1], matches[2]);
-    } else {
-      // Check if the URL indeed represents a valid remote.
-      const remote = sources.parseUrl(details.url);
-      if (!remote) {
-        console.log(`${details.url} is no valid URL`);
-        return;
-      }
-      docData = yield searchDocument({ url: details.url });
-    }
-    const documentId = docData.revisions[docData.indices.thisRevision].id;
-    const disc = yield getDiscussions(documentId);
-    documentData[details.tabId] = docData;
-    documentData[details.tabId].discussions = disc;
-    updateIcon(documentData[details.tabId], details.tabId);
-    updateBadge(disc.length, details.tabId);
-    responseData(details.tabId);
-  })
-  // Not supported in Firefox, cf.
-  // <https://bugzilla.mozilla.org/show_bug.cgi?id=1242522>.
-  // ,{
-  //   url: urlFilter,
-  //   types: ['main_frame'],
-  // }
-);
-
-// DOI checker
-chrome.webNavigation.onCompleted.addListener(
-  (details) => {
-    if (details.frameId !== 0) {
-      // don't do anything if we're not in the main frame
-      return;
-    }
-
-    // The DOI specification on arxiv.org is inaccurate in that it doesn't
-    // represent the DOI of the currently focused article, but a "related"
-    // version.
-    const parsedUrl = url.parse(details.url);
-    if (['arxiv.org'].indexOf(parsedUrl.hostname) !== -1) return;
-
-    // don't do anything if we already have document data for the tab
-    if (documentData[details.tabId]) return;
-
-    const searchDoiOnPaperhive = co.wrap(function* search(doi) {
+  chrome.tabs.sendMessage(
+    details.tabId,
+    { keys: ['citation_doi', 'DC.Identifier'] },
+    co.wrap(function* scanRemoteResponse(doi) {
       if (!doi) return;
-      const docData = yield searchDocument({ doi });
-      const documentId = docData.revisions[docData.indices.thisRevision].id;
-      const disc = yield getDiscussions(documentId);
-      documentData[details.tabId] = docData;
-      documentData[details.tabId].discussions = disc;
-      updateIcon(documentData[details.tabId], details.tabId);
-      updateBadge(disc.length, details.tabId);
-      responseData(details.tabId);
-    });
+      const revision = yield getDocumentByRemote('doi', doi);
+      setRevision(details.tabId, revision);
+    })
+  );
+});
+// Not supported in Firefox, cf.
+// <https://bugzilla.mozilla.org/show_bug.cgi?id=1242522>.
+// ,{
+//   types: ['main_frame'],
+// }
 
-    // We would like to check the meta keys 'citation_doi' and
-    // 'dc.identifier'. Since this needs parsing the actual HTML content, we
-    // have to do it in the content script. Have that call back on
-    // searchDoiOnPaperhive where we process the dois.
-    if (documentData[details.tabId] && documentData[details.tabId].revisions) {
-      // don't take action if we already have data
-      return;
-    }
-    chrome.tabs.sendMessage(
-      details.tabId,
-      { keys: ['citation_doi', 'DC.Identifier'] },
-      searchDoiOnPaperhive
-    );
-  }
-  // Not supported in Firefox, cf.
-  // <https://bugzilla.mozilla.org/show_bug.cgi?id=1242522>.
-  // ,{
-  //   types: ['main_frame'],
-  // }
-);
-
-// add listener for content script communication
+// add listener for content+popup script communication
 chrome.runtime.onMessage.addListener(
   (request, sender, sendResponse) => {
     // The tab ID is either in the sender (if a content script sent the
     // request) or in the request.activeTabId (if popup.js sent the request).
     const tabId = request.activeTabId || sender.tab.id;
-    if (!tabId) {
-      console.error('Invalid tab ID.');
-    }
+    if (!tabId) throw new Error('Invalid tab ID.');
 
-    if (request.getDocumentData) {
-      if (documentData[tabId]) {
+    if (request.gettabs) {
+      if (tabs[tabId]) {
         // send immediately since the tab is fully loaded
-        sendResponse(documentData[tabId]);
+        sendResponse(tabs[tabId]);
       } else {
         // send later, cf.
         // <http://stackoverflow.com/a/30020271/353337>
@@ -309,3 +348,4 @@ chrome.runtime.onMessage.addListener(
     return undefined;
   }
 );
+*/
