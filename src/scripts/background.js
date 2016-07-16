@@ -80,8 +80,7 @@ class Tab {
   _reset() {
     this._updateIcon();
     this._updateBadge();
-    delete this.revisions;
-    delete this.discussions;
+    delete this.documentData;
   }
 
   _updateDocument(docId) {
@@ -97,8 +96,7 @@ class Tab {
         yield [getDocumentRevisions(docId), yield getDiscussions(docId)];
 
       // save data
-      self.revisions = revisions;
-      self.discussions = discussions;
+      self.documentData = { revisions, discussions };
 
       // update icon+badge
       self._updateIcon(true);
@@ -236,6 +234,42 @@ chrome.tabs.onReplaced.addListener((addedTab, removedTag) => {
 // clean up after tab close (wait until all pending actions completed)
 chrome.tabs.onRemoved.addListener(tabId => removeTab(tabId));
 
+// ****************************************************************************
+// content+popup script communication
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  // The tab ID is either in the sender (if a content script sent the
+  // request) or in the request.activeTabId (if popup.js sent the request).
+  const tabId = request.tabId || sender.tab.id;
+  if (!tabId) throw new Error('tab id is missing.');
+
+  const tab = tabs[tabId];
+  if (!tab) throw new Error(`tab ${tabId} is not set up.`);
+
+  switch (request.command) {
+    case 'getDocumentData':
+      sendResponse(tab.documentData);
+      break;
+    default: console.error(`command ${request.command} not understood`);
+  }
+/*
+  if (request.gettabs) {
+    if (tabs[tabId]) {
+      // send immediately since the tab is fully loaded
+      sendResponse(tabs[tabId]);
+    } else {
+      // send later, cf.
+      // <http://stackoverflow.com/a/30020271/353337>
+      responseSender[tabId] = sendResponse;
+      // returning `true` to indicate that we intend to send later, cf.
+      // <https://developer.chrome.com/extensions/runtime#event-onMessage>
+      return true;
+    }
+  }
+  return undefined;
+  */
+});
+
+
 /*
 const searchDocument = co.wrap(function* main(query) {
   // build query
@@ -326,29 +360,4 @@ chrome.webNavigation.onCompleted.addListener(details => {
 // ,{
 //   types: ['main_frame'],
 // }
-
-// add listener for content+popup script communication
-chrome.runtime.onMessage.addListener(
-  (request, sender, sendResponse) => {
-    // The tab ID is either in the sender (if a content script sent the
-    // request) or in the request.activeTabId (if popup.js sent the request).
-    const tabId = request.activeTabId || sender.tab.id;
-    if (!tabId) throw new Error('Invalid tab ID.');
-
-    if (request.gettabs) {
-      if (tabs[tabId]) {
-        // send immediately since the tab is fully loaded
-        sendResponse(tabs[tabId]);
-      } else {
-        // send later, cf.
-        // <http://stackoverflow.com/a/30020271/353337>
-        responseSender[tabId] = sendResponse;
-        // returning `true` to indicate that we intend to send later, cf.
-        // <https://developer.chrome.com/extensions/runtime#event-onMessage>
-        return true;
-      }
-    }
-    return undefined;
-  }
-);
 */

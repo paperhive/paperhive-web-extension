@@ -31,6 +31,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
 });
 
+/*
 chrome.runtime.sendMessage(
   {
     getDocumentData: true,
@@ -65,3 +66,4 @@ chrome.runtime.sendMessage(
     }
   }
 );
+*/
