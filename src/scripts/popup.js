@@ -8,6 +8,7 @@ require('../styles/popup.less');
 
 const angular = require('angular');
 require('angular-moment');
+const _ = require('lodash');
 
 const paperhive = angular
 .module('paperHive', [
@@ -18,7 +19,7 @@ const paperhive = angular
 paperhive.controller('PopupCtrl', [
   'config', '$http', '$scope', '$filter',
   (config, $http, $scope, $filter) => {
-    const documentToString = (doc) => {
+    function documentToString(doc) {
       // Translate a document to a nicely formatted string to be used in a
       // sentence.
       const components = [];
@@ -43,10 +44,9 @@ paperhive.controller('PopupCtrl', [
         components.push(`published at ${$filter('date')(doc.publishedAt, '')}`);
       }
       return components.join(', ');
-    };
+    }
 
     $scope.frontendUrl = config.frontendUrl;
-    $scope.document = {};
 
     $scope.submitApproved = (url) => {
       if (url) {
@@ -77,39 +77,32 @@ paperhive.controller('PopupCtrl', [
     };
 
     // reset document data
-    $scope.document = undefined;
-    $scope.latestText = undefined;
+    delete $scope.documentData;
 
     // fetch data from the background script
     chrome.tabs.query(
-      {
-        active: true,
-        currentWindow: true,
-      },
-      (tabs) => {
+      { active: true, currentWindow: true },
+      tabs => {
         // expose tab url to popup.html
-        // We need $apply here, see, e.g.,
-        // <http://jimhoskins.com/2012/12/17/angularjs-and-apply.html>.
-        $scope.$apply(() => {
-          $scope.tabUrl = tabs[0].url;
-        });
+        $scope.$apply(() => { $scope.tabUrl = tabs[0].url; });
         // get document data
         chrome.runtime.sendMessage(
-          {
-            getDocumentData: true,
-            activeTabId: tabs[0].id,
-          },
-          (response) => {
-            // same as above
-            $scope.$apply(() => {
-              $scope.document = response;
-              $scope.latestText = documentToString(
-                response.revisions[response.revisions.length - 1]
-              );
-            });
-          }
+          { command: 'getDocumentData', tabId: tabs[0].id },
+          response => $scope.$apply(() => { $scope.documentData = response; })
         );
       }
     );
+
+    // update latestRevision and hasOpenAccessRevision
+    $scope.$watch('documentData', documentData => {
+      if (!documentData || !documentData.revisions) {
+        $scope.latestRevision = undefined;
+        return;
+      }
+      $scope.latestRevision =
+        _.orderBy(documentData.revisions, 'publishedAt', 'desc')[0];
+      $scope.latestOpenAccessRevision =
+        _.find(documentData.revisions, { isOpenAccess: true });
+    });
   },
 ]);
