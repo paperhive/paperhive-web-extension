@@ -5,23 +5,25 @@
 
 @import "../../bower_components/fontawesome/less/font-awesome.less";
 
+@ph-padding: 10px;
+
 body {
-  padding: 10px;
-  min-width:300px;
+  padding: @ph-padding;
+  min-width: 350px;
+  max-width: 400px;
+}
+
+header {
+  text-align: center;
+  margin-top: @ph-padding;
+  margin-bottom: 2 * @ph-padding;
 }
 
 .ph-title-logo {
-  height:100%;
-}
-
-.navbar-brand {
-  padding: 0;
+  width: 275px;
+  max-width: 100%;
 }
 
 .ph-feedback {
-  font-size:x-small;
-}
-
-.ph-no-left-margin {
-  margin-left: -15px;
+  font-size: x-small;
 }
