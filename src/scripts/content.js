@@ -24,7 +24,10 @@ const defaultExtractorNames = ['metaCitationDoi', 'aDoi'];
 function extractRemote(_extractorNames) {
   const extractorNames =
     _extractorNames === 'default' ? defaultExtractorNames : _extractorNames;
-  for (const extractorName of extractorNames || defaultExtractorNames) {
+
+  // NOTE: for (const ... of ...) is not yet supported by firefox 48
+  let extractorName;
+  for (extractorName of extractorNames || defaultExtractorNames) {
     const extractor = extractors[extractorName];
     if (!extractor) throw new Error(`extractor ${extractorName} does not exist`);
     const remote = extractor();

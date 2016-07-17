@@ -150,18 +150,14 @@ class Tab {
     });
   }
 
-  onCompleted() {
+  onCompleted(url) {
     const self = this;
     return co(function* _onCompleted() {
       // do nothing if we already have documentData set
       if (self.documentData) return;
 
-      const tab = yield new Promise(resolve => chrome.tabs.get(self.tabId, resolve));
-
-      if (!tab || !tab.url) return;
-
       // parse the tab url
-      const parsedUrl = urlParse(tab.url);
+      const parsedUrl = urlParse(url);
 
       // don't do anything if the hostname isn't whitelisted.
       const whitelistMatch =
@@ -235,11 +231,9 @@ function onUrlChange(details) {
 chrome.webNavigation.onCommitted.addListener(onUrlChange);
 chrome.webNavigation.onHistoryStateUpdated.addListener(onUrlChange);
 
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  if (!tabId || !tabs[tabId]) return;
-  if (changeInfo.status === 'complete') {
-    safeCall(tabId, 'onCompleted');
-  }
+chrome.webNavigation.onCompleted.addListener(details => {
+  if (details.frameId !== 0 || !tabs[details.tabId]) return;
+  safeCall(details.tabId, 'onCompleted', details.url);
 });
 
 // ****************************************************************************
