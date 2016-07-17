@@ -8,17 +8,9 @@
   </head>
   <body ng-controller="PopupCtrl">
     <header>
-      <nav class="navbar">
-        <div class="container">
-          <div class="navbar-header">
-            <a class="navbar-brand" target="_blank" ng-href="{{frontendUrl}}"
-              title="PaperHive"
-            >
-              <img class="ph-title-logo" src="images/logo-full.svg">
-            </a>
-          </div>
-        </div>
-      </nav>
+      <a target="_blank" ng-href="{{frontendUrl}}" title="PaperHive">
+        <img class="ph-title-logo" src="images/logo-full.svg">
+      </a>
     </header>
 
     <main>
@@ -118,11 +110,13 @@ Thanks!"
         </ul>
       </div>
 
-      <a id="link" target="_blank" role="button" class="btn btn-primary"
-         ng-if="latestRevision"
-         ng-href="{{frontendUrl}}/documents/{{latestRevision.id}}">
-        Open in PaperHive
-      </a>
+      <p>
+        <a id="link" target="_blank" role="button" class="btn btn-primary btn-block"
+           ng-if="latestRevision"
+           ng-href="{{frontendUrl}}/documents/{{latestRevision.id}}">
+          Open in PaperHive
+        </a>
+      </p>
     </main>
 
     <footer class="text-right">
