@@ -5,11 +5,16 @@ Status](https://travis-ci.org/paperhive/paperhive-web-extension.svg?branch=maste
 [![Dependency
 Status](https://gemnasium.com/paperhive/paperhive-web-extension.svg)](https://gemnasium.com/paperhive/paperhive-web-extension)
 
+The PaperHive browser extension informs you about dicussions on articles while you are browsing. This is how it looks like:
+
+<a href="https://cloud.githubusercontent.com/assets/1874116/16908275/75d01d84-4cca-11e6-80ca-f209871a0eee.png" title="PaperHive Chrome extension on arXiv"><img src="https://cloud.githubusercontent.com/assets/1874116/16908275/75d01d84-4cca-11e6-80ca-f209871a0eee.png" width="500"></a>
+
+In order to protect your privacy, the extension is only active on whitelisted pages (search for *whitelist* in the [source](https://github.com/paperhive/paperhive-web-extension/blob/master/src/scripts/background.js)).
+
 The extension can be installed for both
 
  * [Chrome/Chromium](https://chrome.google.com/webstore/detail/paperhive/fihafdlllifbanclcjljledeifcdjbok) and
  * [Firefox](https://addons.mozilla.org/en-US/firefox/addon/paperhive/).
-
 
 ##Build instructions
 * Copy `config.json.default` to `config.json` and adapt to your needs.
@@ -17,7 +22,7 @@ The extension can be installed for both
 * Run `npm run build:chrome`. This will build the extension in `./build/`.
 * Open Chrom{e,ium} on [chrome://extensions/](chrome://extensions/) and "Load unpacked extension" from
 the`./build/` directory.
-* Go to a page that has PaperHive discussions (e.g., https://arxiv.org/abs/1208.0264) and see if it works for you.
+* Go to a page that has PaperHive discussions (e.g., https://arxiv.org/abs/1603.04246) and see if it works for you.
 
 For development, use
 ```
