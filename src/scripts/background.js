@@ -229,7 +229,11 @@ function onUrlChange(details) {
   safeCall(details.tabId, 'onUrlChange', details.url);
 }
 chrome.webNavigation.onCommitted.addListener(onUrlChange);
-chrome.webNavigation.onHistoryStateUpdated.addListener(onUrlChange);
+try {
+  chrome.webNavigation.onHistoryStateUpdated.addListener(onUrlChange);
+} catch (error) {
+  console.warn('onHistoryStateUpdated unsupported in your browser.');
+}
 
 chrome.webNavigation.onCompleted.addListener(details => {
   if (details.frameId !== 0 || !tabs[details.tabId]) return;

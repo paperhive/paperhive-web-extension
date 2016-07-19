@@ -10,7 +10,7 @@ const extractors = {
     return { type: 'doi', id: meta.content };
   },
   aDoi: () => {
-    const a = document.querySelector('a[href*="doi.org/" i]');
+    const a = document.querySelector('a[href*="doi.org/"]');
     if (!a) return undefined;
     const match = /^https?:\/\/(?:dx\.)?doi\.org\/(.*)$/i.exec(a.href);
     if (!match) return undefined;
